@@ -9,7 +9,7 @@ CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++11 -g -I./$(INC)
 
 # Archivos del proyecto
-SOURCES := random.cpp util.cpp
+SOURCES := random.cpp util.cpp timer.cpp
 INCLUDES := $(addprefix $(INC)/, $(SOURCES:.cpp=.h))
 OBJECTS := $(addprefix $(OBJ)/, $(SOURCES:.cpp=.o))
 SOURCES := $(addprefix $(SRC)/, $(SOURCES))

@@ -53,7 +53,7 @@ vector<vector<Example>> make_partitions(const vector<Example>& data) {
   return partitions;
 }
 
-// ------------------------------ Functions on data points ---------------------------------------
+// ------------------------------ Functions on data points -------------------------------------
 
 double distance_sq(const Example& e1, const Example& e2) {
   double distance = 0.0;
@@ -67,4 +67,11 @@ double distance_sq_weights(const Example& e1, const Example& e2, const vector<do
   for (int i = 0; i < e1.n; i++)
     distance += w[i] * (e2.traits[i] - e1.traits[i]) * (e2.traits[i] - e1.traits[i]);
   return distance;
+}
+
+// ------------------------------ Misc -------------------------------------
+
+void clear_vector(vector<double>& w) {
+  for (auto& weight : w)
+    weight = 0.0;
 }

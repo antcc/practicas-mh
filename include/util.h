@@ -32,3 +32,6 @@ double distance_sq(const Example& e1, const Example& e2);
 // Distance squared between two data points (with weights)
 // @cond e1.n == e2.n
 double distance_sq_weights(const Example& e1, const Example& e2, const vector<double>& w);
+
+// Set all values of a vector<double> to 0.0
+void clear_vector(vector<double>& w);
