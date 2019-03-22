@@ -81,5 +81,5 @@ double elapsed_time()
 */
 {
     elapsed = clock()- start_time;
-    return elapsed / CLOCKS_PER_SEC / 1000.0;
+    return elapsed / CLOCKS_PER_SEC * 1000.0;
 }

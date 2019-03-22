@@ -65,7 +65,8 @@ double distance_sq(const Example& e1, const Example& e2) {
 double distance_sq_weights(const Example& e1, const Example& e2, const vector<double>& w) {
   double distance = 0.0;
   for (int i = 0; i < e1.n; i++)
-    distance += w[i] * (e2.traits[i] - e1.traits[i]) * (e2.traits[i] - e1.traits[i]);
+    if (w[i] >= 0.2)
+      distance += w[i] * (e2.traits[i] - e1.traits[i]) * (e2.traits[i] - e1.traits[i]);
   return distance;
 }
 
