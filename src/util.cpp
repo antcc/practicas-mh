@@ -72,7 +72,7 @@ double distance_sq_weights(const Example& e1, const Example& e2, const vector<do
 
 // ------------------------------ Misc -------------------------------------
 
-void clear_vector(vector<double>& w) {
+void init_vector(vector<double>& w) {
   for (auto& weight : w)
     weight = 0.0;
 }

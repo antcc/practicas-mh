@@ -34,4 +34,4 @@ double distance_sq(const Example& e1, const Example& e2);
 double distance_sq_weights(const Example& e1, const Example& e2, const vector<double>& w);
 
 // Set all values of a vector<double> to 0.0
-void clear_vector(vector<double>& w);
+void init_vector(vector<double>& w);

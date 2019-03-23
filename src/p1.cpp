@@ -11,7 +11,7 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
-#include "random.h"
+#include <random>
 #include "util.h"
 #include "timer.h"
 
@@ -19,9 +19,22 @@ using namespace std;
 
 #define DEBUG 0
 
-// ------------------------- Constants ------------------------------------
+// ----------------------- Constants and global variables -------------------------------
 
+// Measures importance of classification and reduction rates.
 const float alpha = 0.5;
+
+// Standard deviation for normal distribution
+const float sigma = 0.3;
+
+// Maximum number of iterations for local search method
+const int MAX_ITER = 15000;
+
+// Upper bound for neighbour generation in local search method
+const int MAX_NEIGHBOUR_PER_TRAIT = 20;
+
+// Random engine generator
+default_random_engine gen;
 
 // ------------------------- Functions ------------------------------------
 
@@ -42,14 +55,15 @@ string classifier_1nn(const Example& e, const vector<Example>& training) {
   return category;
 }
 
-// 1-nearest neighbour with weights
+// 1-nearest neighbour with weights (using leave-one-out strategy)
+// @param self Position of example @e in vector @training, or -1 if it's not in it.
 // @cond e.n == training[i].n
 string classifier_1nn_weights(const Example& e, const vector<Example>& training,
-                              const vector<double>& w) {
-  string category = training[0].category;
-  double dmin = distance_sq_weights(e, training[0], w);
+                              int self, const vector<double>& w) {
+  string category;
+  double dmin = numeric_limits<double>::max();
 
-  for (int i = 1; i < training.size(); i++) {
+  for (int i = 0; i < self; i++) {
     double dist = distance_sq_weights(e, training[i], w);
 
     if (dist < dmin) {
@@ -57,6 +71,16 @@ string classifier_1nn_weights(const Example& e, const vector<Example>& training,
       dmin = dist;
     }
   }
+
+  for (int i = self + 1; i < training.size(); i++) {
+    double dist = distance_sq_weights(e, training[i], w);
+
+    if (dist < dmin) {
+      category = training[i].category;
+      dmin = dist;
+    }
+  }
+
   return category;
 }
 
@@ -100,8 +124,11 @@ void nearest_examples(const vector<Example>& training, const Example& e,
 }
 
 // Greedy algorithm to compute weights
-// @cond w[i] = 0 && w.size() == training[i].n
+// @cond w.size() == training[i].n
 void relief(const vector<Example>& training, vector<double>& w) {
+  // Set w[i] = 0
+  init_vector(w);
+
   for (int i = 0; i < training.size(); i++) {
     int n_friend = 0;
     int n_enemy = 0;
@@ -152,6 +179,58 @@ float objective(float class_rate, float red_rate) {
   return alpha * class_rate + (1 - alpha) * red_rate;
 }
 
+// Best-first local search method to compute weights
+// w.size() == training[i].n
+void local_search(const vector<Example>& training, vector<double>& w) {
+  normal_distribution<double> normal(0.0, sigma);
+  uniform_real_distribution<double> uniform_real(0.0, 1.0);
+  const int n = w.size();
+  uniform_int_distribution<int> uniform_int(0.0, n);
+  vector<string> classified;
+  bool mutated_component[n];
+  double best_objective = 0.0;
+  int iter = 0;
+  int neighbour = 0;
+
+  // Generate initial solution
+  for (auto& weight : w)
+    weight = uniform_real(gen);
+
+  while () {
+    int comp;
+    bool improvement = true;
+
+    for (int i = 0; i < n; i++)
+      mutated_component[i] = false;
+
+
+
+
+    // Mutate w
+    vector<double> w_mut = w;
+    w_mut[comp] += normal(gen);
+
+    if (w_mut[comp] > 1) w_mut[comp] = 1;
+    if (w_mut[comp] < 0) w_mut[comp] = 0;
+
+    // Acceptance criterion
+    for (int i = 0; i < training.size(); i++)
+      classified.push_back(classifier_1nn_weights(training[i], training, i, w_mut));
+
+    double current_objective = objective(class_rate(classified, training), red_rate(w));
+    if (current_objective > best_objective) {
+      w = w_mut;
+      best_objective = current_objective;
+      improvement = true;
+      iter++;
+    }
+
+    classified.clear();
+
+
+  }
+}
+
 // Run every algorithm for a particular dataset and print results
 void run(const string& filename) {
   cout << "----------------------------------------------------------" << endl;
@@ -163,7 +242,7 @@ void run(const string& filename) {
   read_csv(filename, dataset);
 
   // Make partitions to train/test
-  random_shuffle(dataset.begin(), dataset.end());
+  shuffle(dataset.begin(), dataset.end(), gen);
   auto partitions = make_partitions(dataset);
 
   // Accumulated statistical values
@@ -183,7 +262,6 @@ void run(const string& filename) {
     vector<Example> training;
     vector<Example> test = partitions[i];
     vector<string> classified;
-    int n = test[0].n;
 
     for (int j = 0; j < i; j++)
       training.insert(training.end(), partitions[j].begin(), partitions[j].end());
@@ -217,7 +295,6 @@ void run(const string& filename) {
     cout << "Tiempo empleado parcial: " << time_w << " ms" << endl << endl;
 
     classified.clear();
-    clear_vector(w);
 
     /******************************************************************************/
 
@@ -229,7 +306,7 @@ void run(const string& filename) {
     start_timers();
     relief(training, w);
     for (auto e : test)
-      classified.push_back(classifier_1nn_weights(e, training, w));
+      classified.push_back(classifier_1nn_weights(e, training, -1, w));
     time_w = elapsed_time();
 
     // Update results
@@ -256,7 +333,6 @@ void run(const string& filename) {
     cout << "Tiempo empleado parcial: " << time_w << " ms" << endl << endl;
 
     classified.clear();
-    clear_vector(w);
 
     /******************************************************************************/
 
@@ -266,9 +342,9 @@ void run(const string& filename) {
     cout << "---------" << endl;
 
     start_timers();
-    //local_search(training, w);
+    local_search(training, w);
     for (auto e : test)
-      classified.push_back(classifier_1nn_weights(e, training, w));
+      classified.push_back(classifier_1nn_weights(e, training, -1, w));
     time_w = elapsed_time();
 
     // Update results
@@ -320,6 +396,7 @@ void run(const string& filename) {
 // ------------------------- Main function ------------------------------------
 
 int main() {
+
   // Dataset 1: ionosphere
   run("data/ionosphere_normalizados.csv");
 
