@@ -8,10 +8,10 @@
 
 // ------------------------ Read CSV file -------------------------------------------------
 
-std::string trim(const std::string &s) {
-  auto wsfront=std::find_if_not(s.begin(),s.end(),[](int c){return std::isspace(c);});
-  auto wsback=std::find_if_not(s.rbegin(),s.rend(),[](int c){return std::isspace(c);}).base();
-  return (wsback<=wsfront ? std::string() : std::string(wsfront,wsback));
+string trim(const string &s) {
+  auto wsfront = find_if_not(s.begin(), s.end(), [](int c){ return isspace(c); });
+  auto wsback = find_if_not(s.rbegin(), s.rend(), [](int c){ return isspace(c); }).base();
+  return (wsback<=wsfront ? string() : string(wsfront,wsback));
 }
 
 void read_csv(string filename, vector<Example>& result) {

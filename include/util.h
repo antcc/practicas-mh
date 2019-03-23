@@ -29,7 +29,7 @@ vector<vector<Example>> make_partitions(const vector<Example>& data);
 // Distance squared between two data points
 // @cond e1.n == e2.n
 double distance_sq(const Example& e1, const Example& e2);
-// Distance squared between two data points (with weights)
+// Distance squared between two data points (considering weights)
 // @cond e1.n == e2.n
 double distance_sq_weights(const Example& e1, const Example& e2, const vector<double>& w);
 

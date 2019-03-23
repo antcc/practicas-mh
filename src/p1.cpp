@@ -61,11 +61,13 @@ string classifier_1nn_weights(const Example& e, const vector<Example>& training,
 }
 
 // Calculate nearest example of same class and nearest example of different class
+// @cond Each example must have at least one enemy and one friend (apart from itself)
+// @cond training[i].n == e.n
 void nearest_examples(const vector<Example>& training, const Example& e,
                       int self, int& n_friend, int& n_enemy) {
+  double dist;
   double dmin_friend = numeric_limits<double>::max();
   double dmin_enemy = numeric_limits<double>::max();
-  double dist;
 
   for (int i = 0; i < self; i++) {
     dist = distance_sq(training[i], e);
@@ -81,6 +83,7 @@ void nearest_examples(const vector<Example>& training, const Example& e,
     }
   }
 
+  // Skip ourselves
   for (int i = self + 1; i < training.size(); i++) {
     dist = distance_sq(training[i], e);
 
@@ -113,14 +116,15 @@ void relief(const vector<Example>& training, vector<double>& w) {
     }
   }
 
-  // Normalize
+  // Normalize weights
   double max = *max_element(w.begin(), w.end());
   for (int j = 0; j < w.size(); j++) {
     if (w[j] < 0) w[j] = 0.0;
-    else w[j] = 1.0 * w[j] / max;
+    else w[j] = (double) w[j] / max;
   }
 }
 
+// Return classification rate in test dataset
 // @cond classified.size() == test.size()
 float class_rate(const vector<string>& classified, const vector<Example>& test) {
   int correct = 0;
@@ -129,23 +133,26 @@ float class_rate(const vector<string>& classified, const vector<Example>& test) 
     if (classified[i] == test[i].category)
       correct++;
 
-  return (float) 100.0 * correct / classified.size();
+  return 100.0 * correct / classified.size();
 }
 
-float red_rate(const vector<double>& w, int n) {
+// Return reduction rate of traits
+float red_rate(const vector<double>& w) {
   int discarded = 0;
 
   for (auto weight : w)
     if (weight < 0.2)
       discarded++;
 
-  return (float) 100.0 * discarded / n;
+  return 100.0 * discarded / w.size();
 }
 
+// Return objective function
 float objective(float class_rate, float red_rate) {
   return alpha * class_rate + (1 - alpha) * red_rate;
 }
 
+// Run every algorithm for a particular dataset and print results
 void run(const string& filename) {
   cout << "----------------------------------------------------------" << endl;
   cout << "CONJUNTO DE DATOS: " << filename << endl;
@@ -156,7 +163,7 @@ void run(const string& filename) {
   read_csv(filename, dataset);
 
   // Make partitions to train/test
-  //random_shuffle(dataset.begin(), dataset.end());
+  random_shuffle(dataset.begin(), dataset.end());
   auto partitions = make_partitions(dataset);
 
   // Accumulated statistical values
@@ -227,7 +234,7 @@ void run(const string& filename) {
 
     // Update results
     class_rate_w = class_rate(classified, test);
-    red_rate_w = red_rate(w, n);
+    red_rate_w = red_rate(w);
     objective_w = objective(class_rate_w, red_rate_w);
 
     class_rate_acum[1] += class_rate_w;
@@ -253,7 +260,7 @@ void run(const string& filename) {
 
     /******************************************************************************/
 
-    // Algorithm 2: LOCAL SEARCH
+    // Algorithm 3: LOCAL SEARCH
     cout << "---------" << endl;
     cout << "BÚSQUEDA LOCAL " << endl;
     cout << "---------" << endl;
@@ -266,7 +273,7 @@ void run(const string& filename) {
 
     // Update results
     class_rate_w = class_rate(classified, test);
-    red_rate_w = red_rate(w, n);
+    red_rate_w = red_rate(w);
     objective_w = objective(class_rate_w, red_rate_w);
 
     class_rate_acum[2] += class_rate_w;
