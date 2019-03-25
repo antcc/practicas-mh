@@ -33,10 +33,17 @@ const int MAX_ITER = 15000;
 // Upper bound for neighbour generation in local search method
 const int MAX_NEIGHBOUR_PER_TRAIT = 20;
 
-// Random engine generator
-default_random_engine gen;
+// Seed for randomness
+const int SEED = 20;
 
-// ------------------------- Functions ------------------------------------
+// Random engine generator
+default_random_engine gen(SEED);
+
+// ------------------------------ Functions -----------------------------------------
+
+/*************************************************************************************/
+/* CLASSIFIER
+/*************************************************************************************/
 
 // 1-nearest neighbour
 // @cond e.n == training[i].n
@@ -83,6 +90,10 @@ string classifier_1nn_weights(const Example& e, const vector<Example>& training,
 
   return category;
 }
+
+/*************************************************************************************/
+/* RELIEF
+/*************************************************************************************/
 
 // Calculate nearest example of same class and nearest example of different class
 // @cond Each example must have at least one enemy and one friend (apart from itself)
@@ -151,6 +162,10 @@ void relief(const vector<Example>& training, vector<double>& w) {
   }
 }
 
+/*************************************************************************************/
+/* STATISTICS
+/*************************************************************************************/
+
 // Return classification rate in test dataset
 // @cond classified.size() == test.size()
 float class_rate(const vector<string>& classified, const vector<Example>& test) {
@@ -176,40 +191,53 @@ float red_rate(const vector<double>& w) {
 
 // Return objective function
 float objective(float class_rate, float red_rate) {
-  return alpha * class_rate + (1 - alpha) * red_rate;
+  return alpha * class_rate + (1.0 - alpha) * red_rate;
 }
+
+/*************************************************************************************/
+/* LOCAL SEARCH
+/*************************************************************************************/
 
 // Best-first local search method to compute weights
 // w.size() == training[i].n
-void local_search(const vector<Example>& training, vector<double>& w) {
+// @return Number of mutations that have improven the solution
+int local_search(const vector<Example>& training, vector<double>& w) {
   normal_distribution<double> normal(0.0, sigma);
   uniform_real_distribution<double> uniform_real(0.0, 1.0);
   const int n = w.size();
-  uniform_int_distribution<int> uniform_int(0.0, n);
   vector<string> classified;
-  bool mutated_component[n];
-  double best_objective = 0.0;
+  vector<int> index;
+  double best_objective;
   int iter = 0;
   int neighbour = 0;
+  bool improvement = false;
+  int mut = 0;
 
-  // Generate initial solution
-  for (auto& weight : w)
-    weight = uniform_real(gen);
+  // Initialize index vector and solution
+  for (int i = 0; i < n; i++) {
+    index.push_back(i);
+    w[i] = uniform_real(gen);
+  }
 
-  while () {
-    int comp;
-    bool improvement = true;
+  shuffle(index.begin(), index.end(), gen);
 
-    for (int i = 0; i < n; i++)
-      mutated_component[i] = false;
+  // Evaluate initial solution
+  for (int i = 0; i < training.size(); i++)
+    classified.push_back(classifier_1nn_weights(training[i], training, i, w));
 
+  best_objective = objective(class_rate(classified, training), red_rate(w));
+  classified.clear();
 
-
+  // Best-first search
+  while (iter < MAX_ITER && neighbour < n * MAX_NEIGHBOUR_PER_TRAIT) {
+    // Select component to mutate
+    int comp = index[iter % n];
 
     // Mutate w
     vector<double> w_mut = w;
     w_mut[comp] += normal(gen);
 
+    // Truncate weights
     if (w_mut[comp] > 1) w_mut[comp] = 1;
     if (w_mut[comp] < 0) w_mut[comp] = 0;
 
@@ -217,19 +245,40 @@ void local_search(const vector<Example>& training, vector<double>& w) {
     for (int i = 0; i < training.size(); i++)
       classified.push_back(classifier_1nn_weights(training[i], training, i, w_mut));
 
-    double current_objective = objective(class_rate(classified, training), red_rate(w));
+    double current_objective = objective(class_rate(classified, training), red_rate(w_mut));
+    iter++;
+
     if (current_objective > best_objective) {
+      mut++;
+      neighbour = 0;
       w = w_mut;
       best_objective = current_objective;
       improvement = true;
-      iter++;
+    }
+
+    else {
+      neighbour++;
     }
 
     classified.clear();
 
-
+    // Update index vector if needed
+    if (iter % n == 0 || improvement) {
+      shuffle(index.begin(), index.end(), gen);
+      improvement = false;
+    }
   }
+
+#if DEBUG == 1
+  cout << "Iteraciones: " << iter << endl << endl;
+#endif
+
+  return mut;
 }
+
+/*************************************************************************************/
+/* RUN ALGORITHMS
+/*************************************************************************************/
 
 // Run every algorithm for a particular dataset and print results
 void run(const string& filename) {
@@ -342,7 +391,7 @@ void run(const string& filename) {
     cout << "---------" << endl;
 
     start_timers();
-    local_search(training, w);
+    int mut = local_search(training, w);
     for (auto e : test)
       classified.push_back(classifier_1nn_weights(e, training, -1, w));
     time_w = elapsed_time();
@@ -368,7 +417,8 @@ void run(const string& filename) {
     cout << "Tasa de clasificación parcial: " << class_rate_w << "%" << endl;
     cout << "Tasa de reducción parcial: " << red_rate_w << "%" << endl;
     cout << "Agregado parcial: " << objective_w << endl;
-    cout << "Tiempo empleado parcial: " << time_w << " ms" << endl << endl;
+    cout << "Tiempo empleado parcial: " << time_w << " ms" << endl;
+    cout << "Mutaciones: " << mut << endl << endl;
 
     classified.clear();
   }
