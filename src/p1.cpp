@@ -17,7 +17,7 @@
 
 using namespace std;
 
-#define DEBUG 0
+#define DEBUG 2
 
 // ----------------------- Constants and global variables -------------------------------
 
@@ -269,7 +269,7 @@ int local_search(const vector<Example>& training, vector<double>& w) {
     }
   }
 
-#if DEBUG == 1
+#if DEBUG == 2
   cout << "Iteraciones: " << iter << endl << endl;
 #endif
 
@@ -312,10 +312,9 @@ void run(const string& filename) {
     vector<Example> test = partitions[i];
     vector<string> classified;
 
-    for (int j = 0; j < i; j++)
-      training.insert(training.end(), partitions[j].begin(), partitions[j].end());
-    for (int j = i + 1; j < K; j++)
-      training.insert(training.end(), partitions[j].begin(), partitions[j].end());
+    for (int j = 0; j < K; j++)
+      if (j != i)
+        training.insert(training.end(), partitions[j].begin(), partitions[j].end());
 
     // Algorithm 1: 1-NN
     cout << "---------" << endl;

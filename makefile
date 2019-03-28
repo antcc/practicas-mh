@@ -6,10 +6,10 @@ BIN = bin
 
 # Opciones de compilación
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++11 -g -I./$(INC) -O2
+CXXFLAGS = -Wall -std=c++11 -g -I./$(INC) -O2
 
 # Archivos del proyecto
-SOURCES := random.cpp util.cpp timer.cpp
+SOURCES := util.cpp timer.cpp
 INCLUDES := $(addprefix $(INC)/, $(SOURCES:.cpp=.h))
 OBJECTS := $(addprefix $(OBJ)/, $(SOURCES:.cpp=.o))
 SOURCES := $(addprefix $(SRC)/, $(SOURCES))

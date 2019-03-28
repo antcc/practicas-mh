@@ -1,0 +1,501 @@
+----------------------------------------------------------
+CONJUNTO DE DATOS: data/ionosphere_normalizados.csv
+----------------------------------------------------------
+
+----- Ejecución 1 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 83.0986%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 41.5493
+	Tiempo empleado parcial: 2.502 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 84.507%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 43.7241
+	Tiempo empleado parcial: 13.554 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 1399
+
+	Tasa de clasificación parcial: 87.3239%
+	Tasa de reducción parcial: 82.3529%
+	Agregado parcial: 84.8384
+	Tiempo empleado parcial: 3634.06 ms
+	Mutaciones: 39
+
+----- Ejecución 2 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 84.2857%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 42.1429
+	Tiempo empleado parcial: 0.921 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 84.2857%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 43.6134
+	Tiempo empleado parcial: 3.82 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2392
+
+	Tasa de clasificación parcial: 85.7143%
+	Tasa de reducción parcial: 85.2941%
+	Agregado parcial: 85.5042
+	Tiempo empleado parcial: 6378.04 ms
+	Mutaciones: 71
+
+----- Ejecución 3 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 94.2857%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 47.1429
+	Tiempo empleado parcial: 0.62 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 94.2857%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 48.6134
+	Tiempo empleado parcial: 3.678 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2743
+
+	Tasa de clasificación parcial: 88.5714%
+	Tasa de reducción parcial: 85.2941%
+	Agregado parcial: 86.9328
+	Tiempo empleado parcial: 7142.15 ms
+	Mutaciones: 67
+
+----- Ejecución 4 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 85.7143%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 42.8571
+	Tiempo empleado parcial: 0.616 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 88.5714%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 45.7563
+	Tiempo empleado parcial: 3.613 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2027
+
+	Tasa de clasificación parcial: 84.2857%
+	Tasa de reducción parcial: 88.2353%
+	Agregado parcial: 86.2605
+	Tiempo empleado parcial: 5094.15 ms
+	Mutaciones: 47
+
+----- Ejecución 5 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 88.5714%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 44.2857
+	Tiempo empleado parcial: 0.616 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 90%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 46.4706
+	Tiempo empleado parcial: 3.604 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 3018
+
+	Tasa de clasificación parcial: 90%
+	Tasa de reducción parcial: 91.1765%
+	Agregado parcial: 90.5882
+	Tiempo empleado parcial: 7746.77 ms
+	Mutaciones: 69
+
+----- Resultados globales 1-NN -----
+Tasa de clasificación global: 87.1911%
+Tasa de reducción global: 0%
+Agregado global: 43.5956
+Tiempo empleado global: 1.055 ms
+
+----- Resultados globales RELIEF -----
+Tasa de clasificación global: 88.33%
+Tasa de reducción global: 2.94118%
+Agregado global: 45.6356
+Tiempo empleado global: 5.6538 ms
+
+----- Resultados globales BÚSQUEDA LOCAL -----
+Tasa de clasificación global: 87.1791%
+Tasa de reducción global: 86.4706%
+Agregado global: 86.8248
+Tiempo empleado global: 5999.03 ms
+
+----------------------------------------------------------
+CONJUNTO DE DATOS: data/colposcopy_normalizados.csv
+----------------------------------------------------------
+
+----- Ejecución 1 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 72.8814%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 36.4407
+	Tiempo empleado parcial: 0.887 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 71.1864%
+	Tasa de reducción parcial: 20.9677%
+	Agregado parcial: 46.0771
+	Tiempo empleado parcial: 4.656 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 3442
+
+	Tasa de clasificación parcial: 71.1864%
+	Tasa de reducción parcial: 83.871%
+	Agregado parcial: 77.5287
+	Tiempo empleado parcial: 10524.7 ms
+	Mutaciones: 82
+
+----- Ejecución 2 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 75.4386%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 37.7193
+	Tiempo empleado parcial: 0.811 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 77.193%
+	Tasa de reducción parcial: 24.1935%
+	Agregado parcial: 50.6933
+	Tiempo empleado parcial: 4.192 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 5541
+
+	Tasa de clasificación parcial: 68.4211%
+	Tasa de reducción parcial: 87.0968%
+	Agregado parcial: 77.7589
+	Tiempo empleado parcial: 16717.4 ms
+	Mutaciones: 78
+
+----- Ejecución 3 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 78.9474%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 39.4737
+	Tiempo empleado parcial: 0.807 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 71.9298%
+	Tasa de reducción parcial: 30.6452%
+	Agregado parcial: 51.2875
+	Tiempo empleado parcial: 4.528 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 5620
+
+	Tasa de clasificación parcial: 80.7018%
+	Tasa de reducción parcial: 80.6452%
+	Agregado parcial: 80.6735
+	Tiempo empleado parcial: 17315.8 ms
+	Mutaciones: 82
+
+----- Ejecución 4 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 82.4561%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 41.2281
+	Tiempo empleado parcial: 0.808 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 77.193%
+	Tasa de reducción parcial: 72.5806%
+	Agregado parcial: 74.8868
+	Tiempo empleado parcial: 4.056 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 4334
+
+	Tasa de clasificación parcial: 75.4386%
+	Tasa de reducción parcial: 79.0323%
+	Agregado parcial: 77.2354
+	Tiempo empleado parcial: 13554.1 ms
+	Mutaciones: 89
+
+----- Ejecución 5 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 68.4211%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 34.2105
+	Tiempo empleado parcial: 0.809 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 63.1579%
+	Tasa de reducción parcial: 32.2581%
+	Agregado parcial: 47.708
+	Tiempo empleado parcial: 4.179 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 4926
+
+	Tasa de clasificación parcial: 57.8947%
+	Tasa de reducción parcial: 85.4839%
+	Agregado parcial: 71.6893
+	Tiempo empleado parcial: 15536 ms
+	Mutaciones: 68
+
+----- Resultados globales 1-NN -----
+Tasa de clasificación global: 75.6289%
+Tasa de reducción global: 0%
+Agregado global: 37.8144
+Tiempo empleado global: 0.8244 ms
+
+----- Resultados globales RELIEF -----
+Tasa de clasificación global: 72.132%
+Tasa de reducción global: 36.129%
+Agregado global: 54.1305
+Tiempo empleado global: 4.3222 ms
+
+----- Resultados globales BÚSQUEDA LOCAL -----
+Tasa de clasificación global: 70.7285%
+Tasa de reducción global: 83.2258%
+Agregado global: 76.9772
+Tiempo empleado global: 14729.6 ms
+
+----------------------------------------------------------
+CONJUNTO DE DATOS: data/texture_normalizados.csv
+----------------------------------------------------------
+
+----- Ejecución 1 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 94.5455%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 47.2727
+	Tiempo empleado parcial: 1.939 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 94.5455%
+	Tasa de reducción parcial: 2.5%
+	Agregado parcial: 48.5227
+	Tiempo empleado parcial: 10.305 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2636
+
+	Tasa de clasificación parcial: 91.8182%
+	Tasa de reducción parcial: 82.5%
+	Agregado parcial: 87.1591
+	Tiempo empleado parcial: 19733.3 ms
+	Mutaciones: 49
+
+----- Ejecución 2 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 88.1818%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 44.0909
+	Tiempo empleado parcial: 1.909 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 89.0909%
+	Tasa de reducción parcial: 5%
+	Agregado parcial: 47.0455
+	Tiempo empleado parcial: 10.482 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2914
+
+	Tasa de clasificación parcial: 89.0909%
+	Tasa de reducción parcial: 82.5%
+	Agregado parcial: 85.7955
+	Tiempo empleado parcial: 21246.4 ms
+	Mutaciones: 58
+
+----- Ejecución 3 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 90.9091%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 45.4545
+	Tiempo empleado parcial: 1.916 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 92.7273%
+	Tasa de reducción parcial: 5%
+	Agregado parcial: 48.8636
+	Tiempo empleado parcial: 10.495 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2251
+
+	Tasa de clasificación parcial: 90%
+	Tasa de reducción parcial: 82.5%
+	Agregado parcial: 86.25
+	Tiempo empleado parcial: 17312 ms
+	Mutaciones: 70
+
+----- Ejecución 4 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 96.3636%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 48.1818
+	Tiempo empleado parcial: 1.91 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 97.2727%
+	Tasa de reducción parcial: 17.5%
+	Agregado parcial: 57.3864
+	Tiempo empleado parcial: 9.974 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 3465
+
+	Tasa de clasificación parcial: 90.9091%
+	Tasa de reducción parcial: 82.5%
+	Agregado parcial: 86.7045
+	Tiempo empleado parcial: 26170.8 ms
+	Mutaciones: 64
+
+----- Ejecución 5 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 90%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 45
+	Tiempo empleado parcial: 1.958 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 92.7273%
+	Tasa de reducción parcial: 5%
+	Agregado parcial: 48.8636
+	Tiempo empleado parcial: 11.706 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 3714
+
+	Tasa de clasificación parcial: 88.1818%
+	Tasa de reducción parcial: 87.5%
+	Agregado parcial: 87.8409
+	Tiempo empleado parcial: 26074.7 ms
+	Mutaciones: 80
+
+----- Resultados globales 1-NN -----
+Tasa de clasificación global: 92%
+Tasa de reducción global: 0%
+Agregado global: 46
+Tiempo empleado global: 1.9264 ms
+
+----- Resultados globales RELIEF -----
+Tasa de clasificación global: 93.2727%
+Tasa de reducción global: 7%
+Agregado global: 50.1364
+Tiempo empleado global: 10.5924 ms
+
+----- Resultados globales BÚSQUEDA LOCAL -----
+Tasa de clasificación global: 90%
+Tasa de reducción global: 83.5%
+Agregado global: 86.75
+Tiempo empleado global: 22107.4 ms
+
