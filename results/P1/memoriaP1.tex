@@ -260,7 +260,7 @@ Para calcular la tasa de clasificación y de reducción utilizamos otras funcion
 
 \newpage
 \section{Descripción de los algoritmos considerados}
-En esta sección se describen los dos algoritmos implementados en esta práctica para el problema del APC. En ambos se pretende es rellenar un vector de pesos para maximizar la función objetivo.
+En esta sección se describen los dos algoritmos implementados en esta práctica para el problema del APC. En ambos lo que se pretende es rellenar un vector de pesos para maximizar la función objetivo.
 
 \subsection*{Algoritmo \textit{greedy} RELIEF}
 
@@ -283,8 +283,8 @@ Separamos la función que se encarga de buscar los amigos y enemigos más cercan
                   \State n\_enemy = i
                   \State dmin\_enemy = dist
             \ElsIf {training[i].category == e.category \textit{and} dist < dmin\_friend)}
-                  \State n\_friend = i;
-                  \State dmin\_friend = dist;
+                  \State n\_friend = i
+                  \State dmin\_friend = dist
 
    \Return n\_enemy, n\_friend
 \EndFunction
@@ -325,7 +325,7 @@ El algoritmo RELIEF se detalla ya en la página siguiente.
 
 \subsection*{Algoritmo de búsqueda local}
 
-Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar el vector de pesos. La idea es mutar en cada iteración una componente aleatoria y \textbf{distinta} del vector de pesos, sumándole un valor extraído de una normal de media $0$ y desviación típica $\sigma = 0.3$. Si tras esta \textit{mutación} se mejora la función objetivo, nos quedamos con este nuevo vector, y si no lo desechamos. Si algún peso se sale del intervalo $[0,1]$ tras la mutación, directamente lo truncamos a $0$ ó a $1$.\\
+Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar el vector de pesos. La idea es mutar en cada iteración una componente aleatoria y \textbf{distinta} del vector de pesos, sumándole un valor extraído de una normal de media $0$ y desviación típica $\sigma = 0.3$. Si tras esta mutación se mejora la función objetivo, nos quedamos con este nuevo vector, y si no lo desechamos. Si algún peso se sale del intervalo $[0,1]$ tras la mutación, directamente lo truncamos a $0$ ó a $1$.\\
 
 Para la generación de la solución inicial sobre la que iterar, consideramos valores extraídos de una distribución uniforme $\mathcal U(0,1)$, que obtenemos gracias al tipo (de la librería \verb|<random>|) \verb|uniform_real_distribution<double>|. A la hora de escoger qué componente vamos a mutar, tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final, volvemos a barajarlo para seguir generando nuevas soluciones.
 
