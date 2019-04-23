@@ -1,171 +1,4 @@
 ----------------------------------------------------------
-CONJUNTO DE DATOS: data/ionosphere_normalizados.csv
-----------------------------------------------------------
-
------ Ejecución 1 -----
-
----------
-1-NN 
----------
-	Tasa de clasificación parcial: 83.0986%
-	Tasa de reducción parcial: 0%
-	Agregado parcial: 41.5493
-	Tiempo empleado parcial: 2.502 ms
-
----------
-RELIEF 
----------
-	Tasa de clasificación parcial: 84.507%
-	Tasa de reducción parcial: 2.94118%
-	Agregado parcial: 43.7241
-	Tiempo empleado parcial: 13.554 ms
-
----------
-BÚSQUEDA LOCAL 
----------
-	Iteraciones: 1399
-
-	Tasa de clasificación parcial: 87.3239%
-	Tasa de reducción parcial: 82.3529%
-	Agregado parcial: 84.8384
-	Tiempo empleado parcial: 3634.06 ms
-	Mutaciones: 39
-
------ Ejecución 2 -----
-
----------
-1-NN 
----------
-	Tasa de clasificación parcial: 84.2857%
-	Tasa de reducción parcial: 0%
-	Agregado parcial: 42.1429
-	Tiempo empleado parcial: 0.921 ms
-
----------
-RELIEF 
----------
-	Tasa de clasificación parcial: 84.2857%
-	Tasa de reducción parcial: 2.94118%
-	Agregado parcial: 43.6134
-	Tiempo empleado parcial: 3.82 ms
-
----------
-BÚSQUEDA LOCAL 
----------
-	Iteraciones: 2392
-
-	Tasa de clasificación parcial: 85.7143%
-	Tasa de reducción parcial: 85.2941%
-	Agregado parcial: 85.5042
-	Tiempo empleado parcial: 6378.04 ms
-	Mutaciones: 71
-
------ Ejecución 3 -----
-
----------
-1-NN 
----------
-	Tasa de clasificación parcial: 94.2857%
-	Tasa de reducción parcial: 0%
-	Agregado parcial: 47.1429
-	Tiempo empleado parcial: 0.62 ms
-
----------
-RELIEF 
----------
-	Tasa de clasificación parcial: 94.2857%
-	Tasa de reducción parcial: 2.94118%
-	Agregado parcial: 48.6134
-	Tiempo empleado parcial: 3.678 ms
-
----------
-BÚSQUEDA LOCAL 
----------
-	Iteraciones: 2743
-
-	Tasa de clasificación parcial: 88.5714%
-	Tasa de reducción parcial: 85.2941%
-	Agregado parcial: 86.9328
-	Tiempo empleado parcial: 7142.15 ms
-	Mutaciones: 67
-
------ Ejecución 4 -----
-
----------
-1-NN 
----------
-	Tasa de clasificación parcial: 85.7143%
-	Tasa de reducción parcial: 0%
-	Agregado parcial: 42.8571
-	Tiempo empleado parcial: 0.616 ms
-
----------
-RELIEF 
----------
-	Tasa de clasificación parcial: 88.5714%
-	Tasa de reducción parcial: 2.94118%
-	Agregado parcial: 45.7563
-	Tiempo empleado parcial: 3.613 ms
-
----------
-BÚSQUEDA LOCAL 
----------
-	Iteraciones: 2027
-
-	Tasa de clasificación parcial: 84.2857%
-	Tasa de reducción parcial: 88.2353%
-	Agregado parcial: 86.2605
-	Tiempo empleado parcial: 5094.15 ms
-	Mutaciones: 47
-
------ Ejecución 5 -----
-
----------
-1-NN 
----------
-	Tasa de clasificación parcial: 88.5714%
-	Tasa de reducción parcial: 0%
-	Agregado parcial: 44.2857
-	Tiempo empleado parcial: 0.616 ms
-
----------
-RELIEF 
----------
-	Tasa de clasificación parcial: 90%
-	Tasa de reducción parcial: 2.94118%
-	Agregado parcial: 46.4706
-	Tiempo empleado parcial: 3.604 ms
-
----------
-BÚSQUEDA LOCAL 
----------
-	Iteraciones: 3018
-
-	Tasa de clasificación parcial: 90%
-	Tasa de reducción parcial: 91.1765%
-	Agregado parcial: 90.5882
-	Tiempo empleado parcial: 7746.77 ms
-	Mutaciones: 69
-
------ Resultados globales 1-NN -----
-Tasa de clasificación global: 87.1911%
-Tasa de reducción global: 0%
-Agregado global: 43.5956
-Tiempo empleado global: 1.055 ms
-
------ Resultados globales RELIEF -----
-Tasa de clasificación global: 88.33%
-Tasa de reducción global: 2.94118%
-Agregado global: 45.6356
-Tiempo empleado global: 5.6538 ms
-
------ Resultados globales BÚSQUEDA LOCAL -----
-Tasa de clasificación global: 87.1791%
-Tasa de reducción global: 86.4706%
-Agregado global: 86.8248
-Tiempo empleado global: 5999.03 ms
-
-----------------------------------------------------------
 CONJUNTO DE DATOS: data/colposcopy_normalizados.csv
 ----------------------------------------------------------
 
@@ -331,6 +164,173 @@ Tasa de clasificación global: 70.7285%
 Tasa de reducción global: 83.2258%
 Agregado global: 76.9772
 Tiempo empleado global: 14729.6 ms
+
+----------------------------------------------------------
+CONJUNTO DE DATOS: data/ionosphere_normalizados.csv
+----------------------------------------------------------
+
+----- Ejecución 1 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 83.0986%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 41.5493
+	Tiempo empleado parcial: 2.502 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 84.507%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 43.7241
+	Tiempo empleado parcial: 13.554 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 1399
+
+	Tasa de clasificación parcial: 87.3239%
+	Tasa de reducción parcial: 82.3529%
+	Agregado parcial: 84.8384
+	Tiempo empleado parcial: 3634.06 ms
+	Mutaciones: 39
+
+----- Ejecución 2 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 84.2857%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 42.1429
+	Tiempo empleado parcial: 0.921 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 84.2857%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 43.6134
+	Tiempo empleado parcial: 3.82 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2392
+
+	Tasa de clasificación parcial: 85.7143%
+	Tasa de reducción parcial: 85.2941%
+	Agregado parcial: 85.5042
+	Tiempo empleado parcial: 6378.04 ms
+	Mutaciones: 71
+
+----- Ejecución 3 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 94.2857%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 47.1429
+	Tiempo empleado parcial: 0.62 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 94.2857%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 48.6134
+	Tiempo empleado parcial: 3.678 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2743
+
+	Tasa de clasificación parcial: 88.5714%
+	Tasa de reducción parcial: 85.2941%
+	Agregado parcial: 86.9328
+	Tiempo empleado parcial: 7142.15 ms
+	Mutaciones: 67
+
+----- Ejecución 4 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 85.7143%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 42.8571
+	Tiempo empleado parcial: 0.616 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 88.5714%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 45.7563
+	Tiempo empleado parcial: 3.613 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 2027
+
+	Tasa de clasificación parcial: 84.2857%
+	Tasa de reducción parcial: 88.2353%
+	Agregado parcial: 86.2605
+	Tiempo empleado parcial: 5094.15 ms
+	Mutaciones: 47
+
+----- Ejecución 5 -----
+
+---------
+1-NN 
+---------
+	Tasa de clasificación parcial: 88.5714%
+	Tasa de reducción parcial: 0%
+	Agregado parcial: 44.2857
+	Tiempo empleado parcial: 0.616 ms
+
+---------
+RELIEF 
+---------
+	Tasa de clasificación parcial: 90%
+	Tasa de reducción parcial: 2.94118%
+	Agregado parcial: 46.4706
+	Tiempo empleado parcial: 3.604 ms
+
+---------
+BÚSQUEDA LOCAL 
+---------
+	Iteraciones: 3018
+
+	Tasa de clasificación parcial: 90%
+	Tasa de reducción parcial: 91.1765%
+	Agregado parcial: 90.5882
+	Tiempo empleado parcial: 7746.77 ms
+	Mutaciones: 69
+
+----- Resultados globales 1-NN -----
+Tasa de clasificación global: 87.1911%
+Tasa de reducción global: 0%
+Agregado global: 43.5956
+Tiempo empleado global: 1.055 ms
+
+----- Resultados globales RELIEF -----
+Tasa de clasificación global: 88.33%
+Tasa de reducción global: 2.94118%
+Agregado global: 45.6356
+Tiempo empleado global: 5.6538 ms
+
+----- Resultados globales BÚSQUEDA LOCAL -----
+Tasa de clasificación global: 87.1791%
+Tasa de reducción global: 86.4706%
+Agregado global: 86.8248
+Tiempo empleado global: 5999.03 ms
 
 ----------------------------------------------------------
 CONJUNTO DE DATOS: data/texture_normalizados.csv

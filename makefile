@@ -6,7 +6,7 @@ BIN = bin
 
 # Opciones de compilación
 CXX = g++
-CXXFLAGS = -Wall -std=c++11 -g -I./$(INC) -O2
+CXXFLAGS = -Wall -std=c++11 -g -I./$(INC) -O3
 
 # Archivos del proyecto
 SOURCES := util.cpp timer.cpp

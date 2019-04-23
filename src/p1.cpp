@@ -17,7 +17,7 @@
 
 using namespace std;
 
-#define DEBUG 2
+#define DEBUG 0
 
 // ----------------------- Constants and global variables -------------------------------
 
@@ -34,10 +34,10 @@ const int MAX_ITER = 15000;
 const int MAX_NEIGHBOUR_PER_TRAIT = 20;
 
 // Seed for randomness
-const int SEED = 20;
+int seed = 20;
 
 // Random engine generator
-default_random_engine gen(SEED);
+default_random_engine gen;
 
 // ------------------------------ Functions -----------------------------------------
 
@@ -48,18 +48,18 @@ default_random_engine gen(SEED);
 // 1-nearest neighbour
 // @cond e.n == training[i].n
 string classifier_1nn(const Example& e, const vector<Example>& training) {
-  string category = training[0].category;
+  int selected = 0;
   double dmin = distance_sq(e, training[0]);
 
   for (int i = 1; i < training.size(); i++) {
     double dist = distance_sq(e, training[i]);
 
     if (dist < dmin) {
-      category = training[i].category;
+      selected = i;
       dmin = dist;
     }
   }
-  return category;
+  return training[selected].category;
 }
 
 // 1-nearest neighbour with weights (using leave-one-out strategy)
@@ -67,14 +67,14 @@ string classifier_1nn(const Example& e, const vector<Example>& training) {
 // @cond e.n == training[i].n
 string classifier_1nn_weights(const Example& e, const vector<Example>& training,
                               int self, const vector<double>& w) {
-  string category;
+  int selected = 0;
   double dmin = numeric_limits<double>::max();
 
   for (int i = 0; i < self; i++) {
     double dist = distance_sq_weights(e, training[i], w);
 
     if (dist < dmin) {
-      category = training[i].category;
+      selected = i;
       dmin = dist;
     }
   }
@@ -83,12 +83,11 @@ string classifier_1nn_weights(const Example& e, const vector<Example>& training,
     double dist = distance_sq_weights(e, training[i], w);
 
     if (dist < dmin) {
-      category = training[i].category;
+      selected = i;
       dmin = dist;
     }
   }
-
-  return category;
+  return training[selected].category;
 }
 
 /*************************************************************************************/
@@ -239,7 +238,7 @@ int local_search(const vector<Example>& training, vector<double>& w) {
 
     // Truncate weights
     if (w_mut[comp] > 1) w_mut[comp] = 1;
-    if (w_mut[comp] < 0) w_mut[comp] = 0;
+    else if (w_mut[comp] < 0) w_mut[comp] = 0;
 
     // Acceptance criterion
     for (int i = 0; i < training.size(); i++)
@@ -444,14 +443,26 @@ void run(const string& filename) {
 
 // ------------------------- Main function ------------------------------------
 
-int main() {
+int main(int argc, char * argv[]) {
+  if (argc > 1) {
+    seed = stoi(argv[1]);
 
-  // Dataset 1: ionosphere
-  run("data/ionosphere_normalizados.csv");
+    gen = default_random_engine(seed);
 
-  // Dataset 2: colposcopy
-  run("data/colposcopy_normalizados.csv");
+    for (int i = 2; i < argc; i++)
+      run(argv[i]);
+  }
 
-  // Dataset 3: texture
-  run("data/texture_normalizados.csv");
+  else {
+    gen = default_random_engine(seed);
+
+    // Dataset 1: colposcopy
+    run("data/colposcopy_normalizados.csv");
+
+    // Dataset 2: ionosphere
+    run("data/ionosphere_normalizados.csv");
+
+    // Dataset 3: texture
+    run("data/texture_normalizados.csv");
+  }
 }
