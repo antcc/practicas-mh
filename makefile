@@ -16,7 +16,15 @@ SOURCES := $(addprefix $(SRC)/, $(SOURCES))
 
 .PHONY: clean mrproper
 
+all: p1 p2
+p1: $(BIN)/p1
+p2: $(BIN)/p2
+
 # ************ Generación de ejecutables *************
+
+# -- Práctica 2 --
+$(BIN)/p2: $(OBJECTS) $(OBJ)/p2.o
+	$(CXX) -o $@ $^
 
 # -- Práctica 1 --
 $(BIN)/p1: $(OBJECTS) $(OBJ)/p1.o
@@ -25,7 +33,7 @@ $(BIN)/p1: $(OBJECTS) $(OBJ)/p1.o
 # ************ Compilación de módulos ************
 
 # -- Práctica 1 --
-$(OBJ)/p1.o: $(SRC)/p1.cpp $(INCLUDES)
+$(OBJ)/%.o: $(SRC)/%.cpp $(INCLUDES)
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 # -- Utilidades --
