@@ -12,6 +12,7 @@
 #include <limits>
 #include <algorithm>
 #include <functional>
+#include <iterator>
 #include <random>
 #include <set>
 #include "util.h"
@@ -39,11 +40,23 @@ const int MAX_ITER = 15000;
 // Upper bound for neighbour generation in low-intensity local search method
 const int MAX_NEIGHBOUR_PER_TRAIT = 2;
 
+// Size of population for genetic algorithms
+const int SIZE_AG = 30;
+
+// Size of population for memetic algorithms
+const int SIZE_AM = 10;
+
+// Cross probability
+const float pc = 0.7;
+
+// Mutation probability
+const float pm = 0.001;
+
 // Seed for randomness
 int seed = 20;
 
 // Random engine generator
-default_random_engine gen;
+default_random_engine generator;
 
 // Number of algorithms
 constexpr int NUM_ALGORITHMS = 7;
@@ -64,17 +77,21 @@ const string algorithms_names[NUM_ALGORITHMS] = {
 // Chromosome
 struct Chromosome {
   vector<double> w;  // Weight vector that represents the chromosome
-  float fitness;  // Value of the objective function for w
+  float fitness;     // Value of the objective function for w
 };
 
-// Population of chromosomes with custom comparator
+// Custom comparator for chromosomes
 struct ChromosomeComp {
   bool operator()(const Chromosome& lhs, const Chromosome& rhs) {
     return lhs.fitness < rhs.fitness;
   }
 };
 
+// Population
 typedef multiset<Chromosome, ChromosomeComp> Population;
+
+// Intermediate population (non-evaluated)
+typedef vector<Chromosome> IntermediatePopulation;
 
 // ------------------------------ Functions -----------------------------------------
 
@@ -173,7 +190,7 @@ int low_intensity_local_search(const vector<Example>& training, vector<double> w
   // Initialize index vector
   for (int i = 0; i < n; i++)
     index.push_back(i);
-  shuffle(index.begin(), index.end(), gen);
+  shuffle(index.begin(), index.end(), generator);
 
   // Evaluate initial solution
   best_objective = evaluate(training, w);
@@ -185,7 +202,7 @@ int low_intensity_local_search(const vector<Example>& training, vector<double> w
 
     // Mutate w
     vector<double> w_mut = w;
-    w_mut[comp] += normal(gen);
+    w_mut[comp] += normal(generator);
 
     // Truncate weights
     if (w_mut[comp] > 1) w_mut[comp] = 1;
@@ -208,7 +225,7 @@ int low_intensity_local_search(const vector<Example>& training, vector<double> w
 
     // Update index vector if needed
     if (j == n || improvement) {
-      shuffle(index.begin(), index.end(), gen);
+      shuffle(index.begin(), index.end(), generator);
       improvement = false;
       j = 0;
     }
@@ -221,24 +238,82 @@ int low_intensity_local_search(const vector<Example>& training, vector<double> w
 /* GENETIC OPERATORS
 /*************************************************************************************/
 
-// Blx cross operator
-pair<Chromosome, Chromosome> blx_cross(const Chromosome& c1, const Chromosome& c2) {
+// Initialize population
+void init_population(Population& pop, int num_chromosomes, int size,
+                     const vector<Example>& training) {
+  uniform_real_distribution<double> random_real(0.0, 1.0);
 
+  for (int i = 0; i < num_chromosomes; i++) {
+    Chromosome c;
+    c.w.resize(size);
+
+    for (int j = 0; j < size; j++)
+      c.w[j] = random_real(generator);
+
+    c.fitness = evaluate(training, c.w);
+    pop.insert(c);
+  }
+}
+
+// Selection operation
+// Binary tournament with replacement
+// @return The selected chromosome
+Chromosome selection(const Population& pop) {
+  uniform_int_distribution<int> random_int(0, pop.size() - 1);
+
+  // Get iterators to two random chromosomes
+  auto p1 = pop.begin();
+  auto p2 = pop.begin();
+  advance(p1, random_int(generator));
+  advance(p2, random_int(generator));
+
+  return p1->fitness > p2->fitness ? *p1 : *p2;
+}
+
+// Blx cross operator
+// Generates two descendants for every two parents
+// @cond c1.w.size() == c2.w.size()
+pair<Chromosome, Chromosome> blx_cross(const Chromosome& c1, const Chromosome& c2) {
+  Chromosome h1, h2;
+
+  h1.w.resize(c1.w.size());
+  h2.w.resize(c1.w.size());
+
+  for (int i = 0; i < c1.w.size(); i++ ) {
+    float cmin = min(c1.w[i], c2.w[i]);
+    float cmax = max(c1.w[i], c2.w[i]);
+    float diff = cmax - cmin;
+
+    uniform_real_distribution<float>
+      random_real(cmin - diff * alpha_blx, cmax + diff * alpha_blx);
+
+    h1.w[i] = random_real(generator);
+    h2.w[i] = random_real(generator);
+  }
+
+  return make_pair(h1, h2);
 }
 
 // Arithmetic cross operator
+// Generates one descendant for every two parents
+// @cond c1.w.size() == c2,w.size()
 Chromosome arithmetic_cross(const Chromosome& c1, const Chromosome& c2) {
+  Chromosome h;
 
+  h.w.resize(c1.w.size());
+
+  for (int i = 0; i < c1.w.size(); i++)
+    h.w[i] = (c1.w[i] + c2.w[i]) / 2.0;
+
+  return h;
 }
 
 // Mutation operator
-void mutate(Chromosome& c) {
-
-}
-
-// Initialize population
-void init_population(Population& population) {
-
+// Mutates a given gene of a chromosome
+// @cond 0 <= comp <= c.w.size()
+void mutate(Chromosome& c, int comp) {
+  normal_distribution<double> normal(0.0, sigma);
+  c.w[comp] += normal(generator);
 }
 
 /*************************************************************************************/
@@ -246,7 +321,31 @@ void init_population(Population& population) {
 /*************************************************************************************/
 
 void agg_blx(const vector<Example> training, vector<double>& w) {
-  Population population;
+  Population pop;
+  int iter = 0;
+
+  // 1. Initialize population
+  init_population(pop, SIZE_AG, w.size(), training);
+  iter += SIZE_AG;
+
+  while (iter < MAX_ITER) {
+    IntermediatePopulation pop_temp;
+    pop_temp.resize(SIZE_AG);
+
+    // 2. Select intermediate population
+    for (int i = 0; i < SIZE_AG; i++) {
+      pop_temp[i] = selection(pop);
+
+#if DEBUG == 1
+      cout << "[AGG-BLX] Selección " << i << ":\n[";
+      for (auto weight : pop_temp[i].w)
+        cout << weight << ", ";
+      cout << "]" << endl << endl;
+#endif
+    }
+
+    // 3. Recombine intermediate population
+  }
 }
 
 void agg_ca(const vector<Example> training, vector<double>& w) {
@@ -314,7 +413,7 @@ void run_p2(const string& filename) {
   read_csv(filename, dataset);
 
   // Make partitions to train/test
-  shuffle(dataset.begin(), dataset.end(), gen);
+  shuffle(dataset.begin(), dataset.end(), generator);
   auto partitions = make_partitions(dataset);
 
   // Accumulated statistical values
@@ -375,7 +474,7 @@ void run_p2(const string& filename) {
       time_acum[p] += time_w;
 
 #if DEBUG == 1
-      cout << "Vector de pesos:\n[";
+      cout << "Solución:\n[";
       for (auto weight : w)
         cout << weight << ", ";
       cout << "]" << endl << endl;
@@ -416,14 +515,14 @@ int main(int argc, char * argv[]) {
   if (argc > 1) {
     seed = stoi(argv[1]);
 
-    gen = default_random_engine(seed);
+    generator = default_random_engine(seed);
 
     for (int i = 2; i < argc; i++)
       run_p2(argv[i]);
   }
 
   else {
-    gen = default_random_engine(seed);
+    generator = default_random_engine(seed);
 
     // Dataset 1: colposcopy
     run_p2("data/colposcopy_normalizados.csv");
