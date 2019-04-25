@@ -8,8 +8,8 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <limits>
-#include <cmath>
 #include <algorithm>
 #include <functional>
 #include <random>
@@ -20,6 +20,7 @@
 using namespace std;
 
 #define DEBUG 0
+#define TABLE 0
 
 // ----------------------- Constants and global variables -------------------------------
 
@@ -294,6 +295,14 @@ void print_results(bool global, float class_rate, float red_rate,
   cout << "Tiempo empleado " << type << ": " << time << " ms" << endl << endl;
 }
 
+// Print result in LaTeX table format
+void print_results_table(int partition, float class_rate, float red_rate,
+                         float objective, float time) {
+  cout << fixed << setprecision(2)
+       << partition << " & " << class_rate << " & " << red_rate << " & "
+       << objective << " & " << time << endl << endl;
+}
+
 // Run every algorithm for a particular dataset and print results
 void run_p2(const string& filename) {
   cout << "----------------------------------------------------------" << endl;
@@ -373,7 +382,12 @@ void run_p2(const string& filename) {
 #endif
 
       // Print partial results
+
+#if TABLE == 0
       print_results(false, class_rate_w, red_rate_w, objective_w, time_w);
+#elif TABLE == 1
+      print_results_table(i + 1, class_rate_w, red_rate_w, objective_w, time_w);
+#endif
 
       // Clear classification vector
       classified.clear();
@@ -384,8 +398,15 @@ void run_p2(const string& filename) {
   cout << "------------------------------------------" << endl << endl;
   for (int p = 0;  p < 1; p++) { // FIXME: bucle completo hasta NUM_ALGORITHMS
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
-    print_results(true, class_rate_acum[p] / K, red_rate_acum[p] / K,
-                  objective_acum[p] / K, time_acum[p] / K);
+
+      // Print partial results
+#if TABLE == 0
+      print_results(true, class_rate_acum[p] / K, red_rate_acum[p] / K,
+                    objective_acum[p] / K, time_acum[p] / K);
+#elif TABLE == 1
+      print_results_table(p + 1, class_rate_acum[p] / K, red_rate_acum[p] / K,
+                          objective_acum[p] / K, time_acum[p] / K);
+#endif
   }
 }
 
