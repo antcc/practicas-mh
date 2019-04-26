@@ -8,8 +8,10 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <cmath>
+#include <functional>
 #include <algorithm>
 #include <random>
 #include "util.h"
@@ -18,6 +20,7 @@
 using namespace std;
 
 #define DEBUG 0
+#define TABLE 1
 
 // ----------------------- Constants and global variables -------------------------------
 
@@ -34,10 +37,19 @@ const int MAX_ITER = 15000;
 const int MAX_NEIGHBOUR_PER_TRAIT = 20;
 
 // Seed for randomness
-int seed = 20;
+int seed = 2019;
 
 // Random engine generator
 default_random_engine gen;
+
+// Number of algorithms
+constexpr int NUM_ALGORITHMS = 2;
+
+// Names of algorithms
+const string algorithms_names[NUM_ALGORITHMS] = {
+  "RELIEF",
+  "BÚSQUEDA LOCAL"
+};
 
 // ------------------------------ Functions -----------------------------------------
 
@@ -135,7 +147,8 @@ void nearest_examples(const vector<Example>& training, const Example& e,
 
 // Greedy algorithm to compute weights
 // @cond w.size() == training[i].n
-void relief(const vector<Example>& training, vector<double>& w) {
+// Does not return anything.
+int relief(const vector<Example>& training, vector<double>& w) {
   // Set w[i] = 0
   init_vector(w);
 
@@ -159,6 +172,8 @@ void relief(const vector<Example>& training, vector<double>& w) {
     if (w[j] < 0) w[j] = 0.0;
     else w[j] = (double) w[j] / max;
   }
+
+  return 0;
 }
 
 /*************************************************************************************/
@@ -279,6 +294,24 @@ int local_search(const vector<Example>& training, vector<double>& w) {
 /* RUN ALGORITHMS
 /*************************************************************************************/
 
+// Print results
+void print_results(bool global, float class_rate, float red_rate,
+                   float objective, float time) {
+  string type = global ? "global" : "parcial";
+  cout << "Tasa de clasificación " << type << ": " << class_rate << "%" << endl;
+  cout << "Tasa de reducción " << type << ": " << red_rate << "%" << endl;
+  cout << "Agregado " << type << ": " << objective << endl;
+  cout << "Tiempo empleado " << type << ": " << time << " ms" << endl << endl;
+}
+
+// Print result in LaTeX table format
+void print_results_table(int partition, float class_rate, float red_rate,
+                         float objective, float time) {
+  cout << fixed << setprecision(2)
+       << (partition == 0 ? "" : to_string(partition)) << " & " << class_rate << " & "
+       << red_rate << " & " << objective << " & " << time << endl;
+}
+
 // Run every algorithm for a particular dataset and print results
 void run_p1(const string& filename) {
   cout << "----------------------------------------------------------" << endl;
@@ -294,151 +327,151 @@ void run_p1(const string& filename) {
   auto partitions = make_partitions(dataset);
 
   // Accumulated statistical values
-  float class_rate_acum[3] = {0.0, 0.0, 0.0};
-  float red_rate_acum[3] = {0.0, 0.0, 0.0};
-  float objective_acum[3] = {0.0, 0.0, 0.0};
-  double time_acum[3] = {0.0, 0.0, 0.0};
+  float class_rate_acum[NUM_ALGORITHMS + 1] = {0.0};
+  float red_rate_acum[NUM_ALGORITHMS + 1] = {0.0};
+  float objective_acum[NUM_ALGORITHMS + 1] = {0.0};
+  double time_acum[NUM_ALGORITHMS + 1] = {0.0};
 
   // Weight vector
   vector<double> w;
   w.resize(partitions[0][0].n);
 
-  // Use every possible partition as test
-  for (int i = 0; i < K; i++) {
-    cout << "----- Ejecución " << i + 1 << " -----" << endl << endl;
+  // List of every algorithm
+  function<int(const vector<Example>&, vector<double>&)> algorithms[NUM_ALGORITHMS] = {
+    relief,
+    local_search
+  };
 
-    vector<Example> training;
-    vector<Example> test = partitions[i];
-    vector<string> classified;
-
-    for (int j = 0; j < K; j++)
-      if (j != i)
-        training.insert(training.end(), partitions[j].begin(), partitions[j].end());
-
-    // Algorithm 1: 1-NN
+  // Run standard 1-nn
+  // Run every algorithm to compute weights
     cout << "---------" << endl;
-    cout << "1-NN " << endl;
-    cout << "---------" << endl;
+    cout << "1-NN" << endl;
+    cout << "---------" << endl << endl;
 
-    start_timers();
-    for (auto e : test)
-      classified.push_back(classifier_1nn(e, training));
-    double time_w = elapsed_time();
+    // Use every possible partition as test
+    for (int i = 0; i < K; i++) {
 
-    // Update results
-    float class_rate_w = class_rate(classified, test);
-    float red_rate_w = 0;
-    float objective_w = objective(class_rate_w, red_rate_w);
-
-    class_rate_acum[0] += class_rate_w;
-    red_rate_acum[0] += red_rate_w;
-    objective_acum[0] += objective_w;
-    time_acum[0] += time_w;
-
-    // Print partial results
-    cout << "Tasa de clasificación parcial: " << class_rate_w << "%" << endl;
-    cout << "Tasa de reducción parcial: " << red_rate_w << "%" << endl;
-    cout << "Agregado parcial: " << objective_w << endl;
-    cout << "Tiempo empleado parcial: " << time_w << " ms" << endl << endl;
-
-    classified.clear();
-
-    /******************************************************************************/
-
-    // Algorithm 2: RELIEF
-    cout << "---------" << endl;
-    cout << "RELIEF " << endl;
-    cout << "---------" << endl;
-
-    start_timers();
-    relief(training, w);
-    for (auto e : test)
-      classified.push_back(classifier_1nn_weights(e, training, -1, w));
-    time_w = elapsed_time();
-
-    // Update results
-    class_rate_w = class_rate(classified, test);
-    red_rate_w = red_rate(w);
-    objective_w = objective(class_rate_w, red_rate_w);
-
-    class_rate_acum[1] += class_rate_w;
-    red_rate_acum[1] += red_rate_w;
-    objective_acum[1] += objective_w;
-    time_acum[1] += time_w;
-
-#if DEBUG == 1
-      cout << "Vector de pesos (RELIEF):\n";
-      for (auto weight : w)
-        cout << weight << ", ";
-      cout << endl << endl;
+#if TABLE == 0
+      cout << "----- Ejecución " << i + 1 << " -----" << endl << endl;
 #endif
 
-    // Print partial results
-    cout << "Tasa de clasificación parcial: " << class_rate_w << "%" << endl;
-    cout << "Tasa de reducción parcial: " << red_rate_w << "%" << endl;
-    cout << "Agregado parcial: " << objective_w << endl;
-    cout << "Tiempo empleado parcial: " << time_w << " ms" << endl << endl;
+      vector<Example> training;
+      vector<Example> test = partitions[i];
+      vector<string> classified;
 
-    classified.clear();
+      // Create test/training partitions
+      for (int j = 0; j < K; j++)
+        if (j != i)
+          training.insert(training.end(), partitions[j].begin(), partitions[j].end());
 
-    /******************************************************************************/
+      // Run algorithm and collect data
+      start_timers();
+      for (auto e : test)
+        classified.push_back(classifier_1nn(e, training));
+      double time_w = elapsed_time();
 
-    // Algorithm 3: LOCAL SEARCH
-    cout << "---------" << endl;
-    cout << "BÚSQUEDA LOCAL " << endl;
-    cout << "---------" << endl;
+      // Update results
+      float class_rate_w = class_rate(classified, test);
+      float red_rate_w = 0.0;
+      float objective_w = objective(class_rate_w, red_rate_w);
 
-    start_timers();
-    int mut = local_search(training, w);
-    for (auto e : test)
-      classified.push_back(classifier_1nn_weights(e, training, -1, w));
-    time_w = elapsed_time();
+      class_rate_acum[0] += class_rate_w;
+      red_rate_acum[0] += red_rate_w;
+      objective_acum[0] += objective_w;
+      time_acum[0] += time_w;
 
-    // Update results
-    class_rate_w = class_rate(classified, test);
-    red_rate_w = red_rate(w);
-    objective_w = objective(class_rate_w, red_rate_w);
-
-    class_rate_acum[2] += class_rate_w;
-    red_rate_acum[2] += red_rate_w;
-    objective_acum[2] += objective_w;
-    time_acum[2] += time_w;
-
-    #if DEBUG == 1
-      cout << "Vector de pesos (BÚSQUEDA LOCAL):\n";
+#if DEBUG == 3
+      cout << "Solución:\n[";
       for (auto weight : w)
         cout << weight << ", ";
-      cout << endl << endl;
-    #endif
+      cout << "]" << endl << endl;
+#endif
 
-    // Print partial results
-    cout << "Tasa de clasificación parcial: " << class_rate_w << "%" << endl;
-    cout << "Tasa de reducción parcial: " << red_rate_w << "%" << endl;
-    cout << "Agregado parcial: " << objective_w << endl;
-    cout << "Tiempo empleado parcial: " << time_w << " ms" << endl;
-    cout << "Mutaciones: " << mut << endl << endl;
+      // Print partial results
 
-    classified.clear();
+#if TABLE == 0
+      print_results(false, class_rate_w, red_rate_w, objective_w, time_w);
+#elif TABLE == 1
+      print_results_table(i + 1, class_rate_w, red_rate_w, objective_w, time_w);
+#endif
+    }
+
+  // Run every algorithm to compute weights
+  for (int p = 0; p < NUM_ALGORITHMS; p++) {
+    cout << "---------" << endl;
+    cout << algorithms_names[p] << endl;
+    cout << "---------" << endl << endl;
+
+    // Use every possible partition as test
+    for (int i = 0; i < K; i++) {
+
+#if TABLE == 0
+      cout << "----- Ejecución " << i + 1 << " -----" << endl << endl;
+#endif
+
+      vector<Example> training;
+      vector<Example> test = partitions[i];
+      vector<string> classified;
+
+      // Create test/training partitions
+      for (int j = 0; j < K; j++)
+        if (j != i)
+          training.insert(training.end(), partitions[j].begin(), partitions[j].end());
+
+      // Run algorithm and collect data
+      start_timers();
+      algorithms[p](training, w);  // Call algorithm
+      for (auto e : test)
+        classified.push_back(classifier_1nn_weights(e, training, -1, w));
+      double time_w = elapsed_time();
+
+      // Update results
+      float class_rate_w = class_rate(classified, test);
+      float red_rate_w = red_rate(w);
+      float objective_w = objective(class_rate_w, red_rate_w);
+
+      class_rate_acum[p+1] += class_rate_w;
+      red_rate_acum[p+1] += red_rate_w;
+      objective_acum[p+1] += objective_w;
+      time_acum[p+1] += time_w;
+
+#if DEBUG == 3
+      cout << "Solución:\n[";
+      for (auto weight : w)
+        cout << weight << ", ";
+      cout << "]" << endl << endl;
+#endif
+
+      // Print partial results
+
+#if TABLE == 0
+      print_results(false, class_rate_w, red_rate_w, objective_w, time_w);
+#elif TABLE == 1
+      print_results_table(i + 1, class_rate_w, red_rate_w, objective_w, time_w);
+#endif
+
+      // Clear classification vector
+      classified.clear();
+    }
   }
 
   // Print global (averaged) results
-  cout << "----- Resultados globales 1-NN -----" << endl;
-  cout << "Tasa de clasificación global: " << class_rate_acum[0] / K << "%" << endl;
-  cout << "Tasa de reducción global: " << red_rate_acum[0] / K << "%" << endl;
-  cout << "Agregado global: " << objective_acum[0] / K << endl;
-  cout << "Tiempo empleado global: " << time_acum[0] / K << " ms" << endl << endl;
+  cout << "------------------------------------------" << endl << endl;
+  for (int p = 0;  p < NUM_ALGORITHMS + 1; p++) {
+    cout << "----- Resultados globales " << (p == 0 ? "1-NN" : algorithms_names[p-1])
+         << " -----" << endl << endl;
 
-  cout << "----- Resultados globales RELIEF -----" << endl;
-  cout << "Tasa de clasificación global: " << class_rate_acum[1] / K << "%" << endl;
-  cout << "Tasa de reducción global: " << red_rate_acum[1] / K << "%" << endl;
-  cout << "Agregado global: " << objective_acum[1] / K << endl;
-  cout << "Tiempo empleado global: " << time_acum[1] / K << " ms" << endl << endl;
+      // Print partial results
 
-  cout << "----- Resultados globales BÚSQUEDA LOCAL -----" << endl;
-  cout << "Tasa de clasificación global: " << class_rate_acum[2] / K << "%" << endl;
-  cout << "Tasa de reducción global: " << red_rate_acum[2] / K << "%" << endl;
-  cout << "Agregado global: " << objective_acum[2] / K << endl;
-  cout << "Tiempo empleado global: " << time_acum[2] / K << " ms" << endl << endl;
+#if TABLE == 0
+      print_results(true, class_rate_acum[p] / K, red_rate_acum[p] / K,
+                    objective_acum[p] / K, time_acum[p] / K);
+#elif TABLE == 1
+      print_results_table(0, class_rate_acum[p] / K, red_rate_acum[p] / K,
+                          objective_acum[p] / K, time_acum[p] / K);
+#endif
+
+  }
 }
 
 // ------------------------- Main function ------------------------------------
