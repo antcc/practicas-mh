@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <limits>
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <iterator>
 #include <random>
@@ -20,7 +21,7 @@
 
 using namespace std;
 
-#define DEBUG 0
+#define DEBUG 2
 #define TABLE 0
 
 // ----------------------- Constants and global variables -------------------------------
@@ -40,10 +41,13 @@ const int MAX_ITER = 15000;
 // Upper bound for neighbour generation in low-intensity local search method
 const int MAX_NEIGHBOUR_PER_TRAIT = 2;
 
-// Size of population for genetic algorithms
-const int SIZE_AG = 30;
+// Size of (intermediate) population for generational genetic algorithms.
+const int SIZE_AGG = 30;
 
-// Size of population for memetic algorithms
+// Size of (intermediate) population for steady state genetic algorithms.
+const int SIZE_AGE = 2;
+
+// Size of population for memetic algorithms. Must be an even positive integer
 const int SIZE_AM = 10;
 
 // Cross probability
@@ -53,7 +57,7 @@ const float pc = 0.7;
 const float pm = 0.001;
 
 // Seed for randomness
-int seed = 20;
+int seed = 2019;
 
 // Random engine generator
 default_random_engine generator;
@@ -107,21 +111,14 @@ string classifier_1nn_weights(const Example& e, const vector<Example>& training,
   int selected = 0;
   double dmin = numeric_limits<double>::max();
 
-  for (int i = 0; i < self; i++) {
-    double dist = distance_sq_weights(e, training[i], w);
+  for (int i = 0; i < training.size(); i++) {
+    if (i != self) {
+      double dist = distance_sq_weights(e, training[i], w);
 
-    if (dist < dmin) {
-      selected = i;
-      dmin = dist;
-    }
-  }
-
-  for (int i = self + 1; i < training.size(); i++) {
-    double dist = distance_sq_weights(e, training[i], w);
-
-    if (dist < dmin) {
-      selected = i;
-      dmin = dist;
+      if (dist < dmin) {
+        selected = i;
+        dmin = dist;
+      }
     }
   }
   return training[selected].category;
@@ -176,16 +173,13 @@ float evaluate(const vector<Example>& training, const vector<double> w) {
 
 // Low-intensity local search method to compute weights
 // w.size() == training[i].n
-// @return Number of mutations that have improven the solution
-int low_intensity_local_search(const vector<Example>& training, vector<double> w) {
+// @return Number of evaluations of the objective function
+int low_intensity_local_search(const vector<Example>& training, Chromosome& c) {
   normal_distribution<double> normal(0.0, sigma);
-  const int n = w.size();
+  const int n = c.w.size();
   vector<int> index;
   double best_objective;
-  int neighbour = 0;
-  bool improvement = false;
-  int mut = 0;
-  int j = 0;
+  int iter = 0;
 
   // Initialize index vector
   for (int i = 0; i < n; i++)
@@ -193,45 +187,35 @@ int low_intensity_local_search(const vector<Example>& training, vector<double> w
   shuffle(index.begin(), index.end(), generator);
 
   // Evaluate initial solution
-  best_objective = evaluate(training, w);
+  best_objective = c.fitness;
 
   // Best-first search
-  while (neighbour < n * MAX_NEIGHBOUR_PER_TRAIT) {
+  while (iter < n * MAX_NEIGHBOUR_PER_TRAIT) {
     // Select component to mutate
-    int comp = j++;
+    int comp = index[iter % n];
 
     // Mutate w
-    vector<double> w_mut = w;
-    w_mut[comp] += normal(generator);
+    Chromosome c_mut = c;
+    c_mut.w[comp] += normal(generator);
 
     // Truncate weights
-    if (w_mut[comp] > 1) w_mut[comp] = 1;
-    else if (w_mut[comp] < 0) w_mut[comp] = 0;
+    if (c_mut.w[comp] > 1) c_mut.w[comp] = 1;
+    else if (c_mut.w[comp] < 0) c_mut.w[comp] = 0;
 
     // Acceptance criterion
-    double current_objective = evaluate(training, w_mut);
+    c_mut.fitness = evaluate(training, c_mut.w);
 
-    if (current_objective > best_objective) {
-      mut++;
-      neighbour = 0;
-      w = w_mut;
-      best_objective = current_objective;
-      improvement = true;
-    }
-
-    else {
-      neighbour++;
+    if (c_mut.fitness > best_objective) {
+      c = c_mut;
+      best_objective = c_mut.fitness;
     }
 
     // Update index vector if needed
-    if (j == n || improvement) {
+    if (iter++ % n == 0)
       shuffle(index.begin(), index.end(), generator);
-      improvement = false;
-      j = 0;
-    }
   }
 
-  return mut;
+  return iter;
 }
 
 /*************************************************************************************/
@@ -287,9 +271,15 @@ pair<Chromosome, Chromosome> blx_cross(const Chromosome& c1, const Chromosome& c
     uniform_real_distribution<float>
       random_real(cmin - diff * alpha_blx, cmax + diff * alpha_blx);
 
+    // NOTE: if c1.w[i] == c2.w[i], h1.w[i] = h2.w[i] = c1.w[i]
+
     h1.w[i] = random_real(generator);
     h2.w[i] = random_real(generator);
+
   }
+
+  h1.fitness = -1.0;
+  h2.fitness = -1.0;
 
   return make_pair(h1, h2);
 }
@@ -305,6 +295,8 @@ Chromosome arithmetic_cross(const Chromosome& c1, const Chromosome& c2) {
   for (int i = 0; i < c1.w.size(); i++)
     h.w[i] = (c1.w[i] + c2.w[i]) / 2.0;
 
+  h.fitness = -1.0;
+
   return h;
 }
 
@@ -314,69 +306,504 @@ Chromosome arithmetic_cross(const Chromosome& c1, const Chromosome& c2) {
 void mutate(Chromosome& c, int comp) {
   normal_distribution<double> normal(0.0, sigma);
   c.w[comp] += normal(generator);
+  c.fitness = -1.0;
 }
 
-/*************************************************************************************/
+// Return expected number of mutations
+// Uses custom "rounding" method
+int expected_mutations(int total_genes) {
+  float expected_mut = pm * total_genes;
+  float remainder = modf(expected_mut, &expected_mut);
+
+  uniform_real_distribution<double> random_real(0.0, 1.0);
+  double u = random_real(generator);
+  if (u <= remainder)
+    expected_mut++;
+
+  return expected_mut;
+}
+
+/***********************************************************************************/
 /* GENERATIONAL GENETIC ALGORITHM (AGG)
-/*************************************************************************************/
+/***********************************************************************************/
 
-void agg_blx(const vector<Example> training, vector<double>& w) {
+// AGG using BLX cross operator
+// @return Total generations
+int agg_blx(const vector<Example> training, vector<double>& w) {
   Population pop;
+  Population::reverse_iterator best_parent;  // Elitism
   int iter = 0;
+  int age = 1;
+  int total_genes = w.size() * SIZE_AGG;
+  int num_cross = pc * (SIZE_AGG / 2);  // Expected crosses
+  int num_mut = expected_mutations(total_genes);
+  uniform_int_distribution<int> random_int(0, total_genes - 1);
 
-  // 1. Initialize population
-  init_population(pop, SIZE_AG, w.size(), training);
-  iter += SIZE_AG;
+#if DEBUG >= 1
+  cout << "[AGG-BLX] Genes por cromosoma: "<< w.size()<< endl;
+#endif
+
+  // 1. Build and evaluate initial population
+  init_population(pop, SIZE_AGG, w.size(), training);
+  iter += SIZE_AGG;
 
   while (iter < MAX_ITER) {
     IntermediatePopulation pop_temp;
-    pop_temp.resize(SIZE_AG);
+    Population new_pop;
 
-    // 2. Select intermediate population
-    for (int i = 0; i < SIZE_AG; i++) {
-      pop_temp[i] = selection(pop);
+    best_parent = pop.rbegin();  // Save best parent for elitism
 
-#if DEBUG == 1
-      cout << "[AGG-BLX] Selección " << i << ":\n[";
-      for (auto weight : pop_temp[i].w)
-        cout << weight << ", ";
-      cout << "]" << endl << endl;
+#if DEBUG >= 1
+      cout << "[AGG-BLX] Mejor fitness actual: "
+           << best_parent->fitness << endl;
 #endif
+
+    // 2. Select intermediate population (already evaluated)
+    pop_temp.resize(SIZE_AGG);
+    for (int i = 0; i < SIZE_AGG; i++) {
+      pop_temp[i] = selection(pop);
     }
 
     // 3. Recombine intermediate population
+    for (int i = 0; i < 2 * num_cross; i += 2) {
+      auto offspring = blx_cross(pop_temp[i], pop_temp[i+1]);
+      pop_temp[i] = offspring.first;
+      pop_temp[i+1] = offspring.second;
+    }
+
+    // 4. Mutate intermediate population
+    set<int> mutated;
+    for (int i = 0; i < num_mut; i++) {
+      int comp;
+
+      // Select (coded) component to mutate, without repetition
+      while(mutated.size() == i) {
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      int selected = comp / w.size();
+      int gene = comp % w.size();
+
+      mutate(pop_temp[selected], gene);
+
+#if DEBUG == 2
+      cout << "[AGG-BLX] Mutación " << i + 1 << ":"
+           << " gen " << comp % w.size() << " del cromosoma "
+           << (comp / w.size()) << endl;
+#endif
+
+    }
+
+    // 5. Evaluate, replace original population and apply elitism
+    for (int i = 0; i < SIZE_AGG; i++) {
+      if (pop_temp[i].fitness == -1.0) {
+        pop_temp[i].fitness = evaluate(training, pop_temp[i].w);
+        iter++;
+      }
+      new_pop.insert(pop_temp[i]);
+    }
+
+    auto current_best = new_pop.rbegin();
+
+#if DEBUG >= 1
+      cout << "[AGG-BLX] Mejor fitness intermedio: "
+           << current_best->fitness << endl;
+#endif
+
+    if (current_best->fitness < best_parent->fitness) {
+
+#if DEBUG >= 1
+      cout << "[AGG-BLX] Reemplazo elitista" << endl;
+#endif
+
+      // Replace worst chromosome of intermediate population
+      new_pop.erase(new_pop.begin());
+      new_pop.insert(*best_parent);
+    }
+
+    // 6. Replace previous population entirely (new generation)
+    pop = new_pop;
+    age++;
+
+#if DEBUG >= 1
+    cout << "[AGE-BLX] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
   }
+
+  // Choose best chromosome as solution
+  w = pop.rbegin()->w;
+
+  return age;
 }
 
-void agg_ca(const vector<Example> training, vector<double>& w) {
+// AGG using arithmetic cross operator
+// @return Total generations
+int agg_ca(const vector<Example> training, vector<double>& w) {
+  Population pop;
+  Population::reverse_iterator best_parent;  // Elitism
+  int iter = 0;
+  int age = 1;
+  int total_genes = w.size() * SIZE_AGG;
+  int num_cross = pc * (SIZE_AGG / 2);  // Expected crosses
+  int num_mut = expected_mutations(total_genes);  // Expected mutations
+  uniform_int_distribution<int> random_int(0, total_genes - 1);
 
+#if DEBUG >= 1
+  cout << "[AGG-CA] Genes por cromosoma: "<< w.size()<< endl;
+#endif
+
+  // 1. Build and evaluate initial population
+  init_population(pop, SIZE_AGG, w.size(), training);
+  iter += SIZE_AGG;
+
+  while (iter < MAX_ITER) {
+    IntermediatePopulation pop_temp;
+    Population new_pop;
+
+    best_parent = pop.rbegin();  // Save best parent for elitism
+
+#if DEBUG >= 1
+      cout << "[AGG-CA] Mejor fitness actual: "
+           << best_parent->fitness << endl;
+#endif
+
+    // 2. Select intermediate population (already evaluated)
+    // NOTE: we select 2 * SIZE_AGG because we only get one descendant for
+    // every two parents, even though we might not use every selected chromosome.
+    pop_temp.resize(2 * SIZE_AGG);
+    for (int i = 0; i < 2 * SIZE_AGG; i++) {
+      pop_temp[i] = selection(pop);
+    }
+
+    // 3. Recombine intermediate population
+    for (int i = 0; i < 2 * num_cross; i++) {
+      pop_temp[i] = arithmetic_cross(pop_temp[i], pop_temp[2 * SIZE_AGG - i - 1]);
+    }
+
+    // 4. Mutate intermediate population
+    set<int> mutated;
+    for (int i = 0; i < num_mut; i++) {
+      int comp;
+
+      // Select (coded) component to mutate, without repetition
+      while(mutated.size() == i) {
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      int selected = comp / w.size();
+      int gene = comp % w.size();
+
+      mutate(pop_temp[selected], gene);
+
+#if DEBUG == 2
+      cout << "[AGG-CA] Mutación " << i + 1 << ":"
+           << " gen " << comp % w.size() << " del cromosoma "
+           << (comp / w.size()) << endl;
+#endif
+
+    }
+
+    // 5. Evaluate, replace original population and apply elitism
+    for (int i = 0; i < SIZE_AGG; i++) {
+      if (pop_temp[i].fitness == -1.0) {
+        pop_temp[i].fitness = evaluate(training, pop_temp[i].w);
+        iter++;
+      }
+      new_pop.insert(pop_temp[i]);
+    }
+
+    auto current_best = new_pop.rbegin();
+
+#if DEBUG >= 1
+      cout << "[AGG-CA] Mejor fitness intermedio: "
+           << current_best->fitness << endl;
+#endif
+
+    if (current_best->fitness < best_parent->fitness) {
+
+#if DEBUG >= 1
+      cout << "[AGG-CA] Reemplazo elitista" << endl;
+#endif
+
+      // Replace worst chromosome of intermediate population
+      new_pop.erase(new_pop.begin());
+      new_pop.insert(*best_parent);
+    }
+
+    // 6. Replace previous population entirely (new generation)
+    pop = new_pop;
+    age++;
+
+#if DEBUG >= 1
+    cout << "[AGE-BLX] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+  }
+
+  // Choose best chromosome as solution
+  w = pop.rbegin()->w;
+
+  return age;
 }
 
 /*************************************************************************************/
 /* STEADY STATE GENETIC ALGORITHM (AGE)
 /*************************************************************************************/
 
-void age_blx(const vector<Example> training, vector<double>& w) {
+// AGE using BLX cross operator
+// @return Total generations
+int age_blx(const vector<Example> training, vector<double>& w) {
+  Population pop;
+  int iter = 0;
+  int age = 1;
+  int total_genes = w.size() * SIZE_AGE;
+  int num_cross = 1.0 * SIZE_AGE / 2;  // Expected crosses (pc = 1)
+  int num_mut = expected_mutations(total_genes);
+  uniform_int_distribution<int> random_int(0, total_genes - 1);
 
+#if DEBUG >= 1
+  cout << "[AGE-BLX] Genes por cromosoma: "<< w.size()<< endl;
+#endif
+
+  // 1. Build and evaluate initial population
+  init_population(pop, SIZE_AGG, w.size(), training);
+  iter += SIZE_AGG;
+
+  while (iter < MAX_ITER) {
+    IntermediatePopulation pop_temp;
+    Population new_pop;
+
+    // 2. Select intermediate population (already evaluated)
+    pop_temp.resize(SIZE_AGE);
+    for (int i = 0; i < SIZE_AGE; i++) {
+      pop_temp[i] = selection(pop);
+    }
+
+    // 3. Recombine intermediate population
+    for (int i = 0; i < 2 * num_cross; i += 2) {
+      auto offspring = blx_cross(pop_temp[i], pop_temp[i+1]);
+      pop_temp[i] = offspring.first;
+      pop_temp[i+1] = offspring.second;
+    }
+
+    // 4. Mutate intermediate population
+    set<int> mutated;
+    for (int i = 0; i < num_mut; i++) {
+      int comp;
+
+      // Select (coded) component to mutate, without repetition
+      while(mutated.size() == i) {
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      int selected = comp / w.size();
+      int gene = comp % w.size();
+
+      mutate(pop_temp[selected], gene);
+
+#if DEBUG == 2
+      cout << "[AGE-BLX] Mutación " << i + 1 << ":"
+           << " gen " << comp % w.size() << " del cromosoma "
+           << (comp / w.size()) << endl;
+#endif
+
+    }
+
+    // 5. Evaluate intermediate population
+    for (int i = 0; i < SIZE_AGE; i++) {
+      pop_temp[i].fitness = evaluate(training, pop_temp[i].w);
+      iter++;
+      new_pop.insert(pop_temp[i]);
+    }
+
+    // 6. Change previous population
+    auto worst = pop.begin();
+    auto second_worst = ++pop.begin();
+    auto current_best = new_pop.rbegin();
+    auto current_second_best = ++new_pop.rbegin();
+
+#if DEBUG >= 1
+    cout << "[AGE-BLX] Fitness mejor hijo: " << current_best->fitness << endl;
+    cout << "[AGE-BLX] Peor fitness población anterior: " << pop.begin()->fitness << endl;
+#endif
+
+    // NOTE: This replacement scheme is only valid when SIZE_AGE == 2
+
+    // Case 1: both descendants survive
+    if (current_second_best->fitness > second_worst->fitness) {
+
+#if DEBUG >= 1
+      cout << "[AGE-BLX] Sobreviven los dos hijos" << endl;
+#endif
+
+      pop.erase(second_worst);
+      pop.erase(pop.begin());
+      pop.insert(*current_second_best);
+      pop.insert(*current_best);
+    }
+
+    // Case 2: only the best descendant survives
+    else if (current_best->fitness > worst->fitness) {
+
+#if DEBUG >= 1
+      cout << "[AGE-BLX] Sobrevive solo el mejor hijo" << endl;
+#endif
+
+      pop.erase(worst);
+      pop.insert(*current_best);
+    }
+
+    // 7. New generation
+    age++;
+
+#if DEBUG >= 1
+    cout << "[AGE-BLX] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+  }
+
+  // Choose best chromosome as solution
+  w = pop.rbegin()->w;
+
+  return age;
 }
 
-void age_ca(const vector<Example> training, vector<double>& w) {
+// AGE using arithmetic cross operator
+// Return Total generations
+int age_ca(const vector<Example> training, vector<double>& w) {
+  Population pop;
+  int iter = 0;
+  int age = 1;
+  int total_genes = w.size() * SIZE_AGE;
+  int num_cross = 1.0 * SIZE_AGE / 2;  // Expected crosses (pc = 1)
+  int num_mut = expected_mutations(total_genes);
+  uniform_int_distribution<int> random_int(0, total_genes - 1);
 
+#if DEBUG >= 1
+  cout << "[AGE-CA] Genes por cromosoma: "<< w.size()<< endl;
+#endif
+
+  // 1. Build and evaluate initial population
+  init_population(pop, SIZE_AGG, w.size(), training);
+  iter += SIZE_AGG;
+
+  while (iter < MAX_ITER) {
+    IntermediatePopulation pop_temp;
+    Population new_pop;
+
+    // 2. Select intermediate population (already evaluated)
+    // NOTE: we select 2 * SIZE_AGE because we only get one descendant for
+    // every two parents, even though we might not use every selected chromosome.
+    pop_temp.resize(2 * SIZE_AGE);
+    for (int i = 0; i < 2 * SIZE_AGE; i++) {
+      pop_temp[i] = selection(pop);
+    }
+
+    // 3. Recombine intermediate population
+    for (int i = 0; i < 2 * num_cross; i++) {
+      pop_temp[i] = arithmetic_cross(pop_temp[i], pop_temp[2 * SIZE_AGE - i - 1]);
+    }
+
+    // 4. Mutate intermediate population
+    set<int> mutated;
+    for (int i = 0; i < num_mut; i++) {
+      int comp;
+
+      // Select (coded) component to mutate, without repetition
+      while(mutated.size() == i) {
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      int selected = comp / w.size();
+      int gene = comp % w.size();
+
+      mutate(pop_temp[selected], gene);
+
+#if DEBUG == 2
+      cout << "[AGE-CA] Mutación " << i + 1 << ":"
+           << " gen " << comp % w.size() << " del cromosoma "
+           << (comp / w.size()) << endl;
+#endif
+
+    }
+
+    // 5. Evaluate intermediate population
+    for (int i = 0; i < SIZE_AGE; i++) {
+      pop_temp[i].fitness = evaluate(training, pop_temp[i].w);
+      iter++;
+      new_pop.insert(pop_temp[i]);
+    }
+
+    // 6. Change previous population
+    auto worst = pop.begin();
+    auto second_worst = ++pop.begin();
+    auto current_best = new_pop.rbegin();
+    auto current_second_best = ++new_pop.rbegin();
+
+#if DEBUG >= 1
+    cout << "[AGE-BLX] Fitness mejor hijo: " << current_best->fitness << endl;
+    cout << "[AGE-BLX] Peor fitness población anterior: " << pop.begin()->fitness << endl;
+#endif
+
+    // NOTE: This replacement scheme is only valid when SIZE_AGE == 2
+
+    // Case 1: both descendants survive
+    if (current_second_best->fitness > second_worst->fitness) {
+
+#if DEBUG >= 1
+      cout << "[AGE-CA] Sobreviven los dos hijos" << endl;
+#endif
+
+      pop.erase(second_worst);
+      pop.erase(pop.begin());
+      pop.insert(*current_second_best);
+      pop.insert(*current_best);
+    }
+
+    // Case 2: only the best descendant survives
+    else if (current_best->fitness > worst->fitness) {
+
+#if DEBUG >= 1
+      cout << "[AGE-CA] Sobrevive solo el mejor hijo" << endl;
+#endif
+
+      pop.erase(worst);
+      pop.insert(*current_best);
+    }
+
+    // 7. New generation
+    age++;
+
+#if DEBUG >= 1
+    cout << "[AGE-BLX] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+  }
+
+  // Choose best chromosome as solution
+  w = pop.rbegin()->w;
+
+  return age;
 }
 
 /*************************************************************************************/
 /* MEMETIC ALGORITHM (AM)
 /*************************************************************************************/
 
-void am_1(const vector<Example> training, vector<double>& w) {
+int am_1(const vector<Example> training, vector<double>& w) {
 
 }
 
-void am_2(const vector<Example> training, vector<double>& w) {
+int am_2(const vector<Example> training, vector<double>& w) {
 
 }
 
-void am_3(const vector<Example> training, vector<double>& w) {
+int am_3(const vector<Example> training, vector<double>& w) {
 
 }
 
@@ -390,16 +817,16 @@ void print_results(bool global, float class_rate, float red_rate,
   string type = global ? "global" : "parcial";
   cout << "Tasa de clasificación " << type << ": " << class_rate << "%" << endl;
   cout << "Tasa de reducción " << type << ": " << red_rate << "%" << endl;
-  cout << "Agregado " << type << ": " << objective / K << endl;
-  cout << "Tiempo empleado " << type << ": " << time << " ms" << endl << endl;
+  cout << "Agregado " << type << ": " << objective << endl;
+  cout << "Tiempo empleado " << type << ": " << time << " s" << endl << endl;
 }
 
 // Print result in LaTeX table format
 void print_results_table(int partition, float class_rate, float red_rate,
                          float objective, float time) {
   cout << fixed << setprecision(2)
-       << partition << " & " << class_rate << " & " << red_rate << " & "
-       << objective << " & " << time << endl << endl;
+       << (partition == 0 ? "" : to_string(partition)) << " & " << class_rate << " & "
+       << red_rate << " & " << objective << " & " << time << endl;
 }
 
 // Run every algorithm for a particular dataset and print results
@@ -427,7 +854,7 @@ void run_p2(const string& filename) {
   w.resize(partitions[0][0].n);
 
   // List of every algorithm
-  function<void(const vector<Example>&, vector<double>&)> algorithms[NUM_ALGORITHMS] = {
+  function<int(const vector<Example>&, vector<double>&)> algorithms[NUM_ALGORITHMS] = {
     agg_blx,
     agg_ca,
     age_blx,
@@ -438,15 +865,17 @@ void run_p2(const string& filename) {
   };
 
   // Run every algorithm
-  for (int p = 0; p < 1; p++) {  // FIXME: bucle completo hasta NUM_ALGORITHMS
+  for (int p = 2; p < 4; p++) {  // FIXME: bucle completo hasta NUM_ALGORITHMS
     cout << "---------" << endl;
     cout << algorithms_names[p] << endl;
     cout << "---------" << endl << endl;
 
     // Use every possible partition as test
     for (int i = 0; i < K; i++) {
-      cout << "----- Ejecución " << i + 1 << " -----" << endl << endl;
 
+#if TABLE == 0
+      cout << "----- Ejecución " << i + 1 << " -----" << endl << endl;
+#endif
       vector<Example> training;
       vector<Example> test = partitions[i];
       vector<string> classified;
@@ -458,10 +887,10 @@ void run_p2(const string& filename) {
 
       // Run algorithm and collect data
       start_timers();
-      algorithms[p](training, w);  // Call algorithm
+      int generations = algorithms[p](training, w);  // Call algorithm
       for (auto e : test)
         classified.push_back(classifier_1nn_weights(e, training, -1, w));
-      double time_w = elapsed_time();
+      double time_w = elapsed_time() / 1000.0;
 
       // Update results
       float class_rate_w = class_rate(classified, test);
@@ -473,7 +902,7 @@ void run_p2(const string& filename) {
       objective_acum[p] += objective_w;
       time_acum[p] += time_w;
 
-#if DEBUG == 1
+#if DEBUG == 3
       cout << "Solución:\n[";
       for (auto weight : w)
         cout << weight << ", ";
@@ -483,6 +912,7 @@ void run_p2(const string& filename) {
       // Print partial results
 
 #if TABLE == 0
+      cout << "Generaciones totales: " << generations << endl;
       print_results(false, class_rate_w, red_rate_w, objective_w, time_w);
 #elif TABLE == 1
       print_results_table(i + 1, class_rate_w, red_rate_w, objective_w, time_w);
@@ -495,17 +925,19 @@ void run_p2(const string& filename) {
 
   // Print global (averaged) results
   cout << "------------------------------------------" << endl << endl;
-  for (int p = 0;  p < 1; p++) { // FIXME: bucle completo hasta NUM_ALGORITHMS
+  for (int p = 2;  p < 4; p++) { // FIXME: bucle completo hasta NUM_ALGORITHMS
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
 
       // Print partial results
+
 #if TABLE == 0
       print_results(true, class_rate_acum[p] / K, red_rate_acum[p] / K,
                     objective_acum[p] / K, time_acum[p] / K);
 #elif TABLE == 1
-      print_results_table(p + 1, class_rate_acum[p] / K, red_rate_acum[p] / K,
+      print_results_table(0, class_rate_acum[p] / K, red_rate_acum[p] / K,
                           objective_acum[p] / K, time_acum[p] / K);
 #endif
+
   }
 }
 
@@ -525,10 +957,10 @@ int main(int argc, char * argv[]) {
     generator = default_random_engine(seed);
 
     // Dataset 1: colposcopy
-    run_p2("data/colposcopy_normalizados.csv");
+    //run_p2("data/colposcopy_normalizados.csv");
 
     // Dataset 2: ionosphere
-    //run_p2("data/ionosphere_normalizados.csv");
+    run_p2("data/ionosphere_normalizados.csv");
 
     // Dataset 3: texture
     //run_p2("data/texture_normalizados.csv");
