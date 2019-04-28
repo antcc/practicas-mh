@@ -21,8 +21,8 @@
 
 using namespace std;
 
-#define DEBUG 2
-#define TABLE 0
+#define DEBUG 0
+#define TABLE 1
 
 // ----------------------- Constants and global variables -------------------------------
 
@@ -271,11 +271,16 @@ pair<Chromosome, Chromosome> blx_cross(const Chromosome& c1, const Chromosome& c
     uniform_real_distribution<float>
       random_real(cmin - diff * alpha_blx, cmax + diff * alpha_blx);
 
-    // NOTE: if c1.w[i] == c2.w[i], h1.w[i] = h2.w[i] = c1.w[i]
+    // NOTE: if c1.w[i] == c2.w[i], then h1.w[i] = h2.w[i] = c1.w[i]
 
     h1.w[i] = random_real(generator);
     h2.w[i] = random_real(generator);
 
+    // Truncate
+    if (h1.w[i] < 0) h1.w[i] = 0.0;
+    if (h1.w[i] > 1) h1.w[i] = 1.0;
+    if (h2.w[i] < 0) h2.w[i] = 0.0;
+    if (h2.w[i] > 1) h2.w[i] = 1.0;
   }
 
   h1.fitness = -1.0;
@@ -307,6 +312,10 @@ void mutate(Chromosome& c, int comp) {
   normal_distribution<double> normal(0.0, sigma);
   c.w[comp] += normal(generator);
   c.fitness = -1.0;
+
+  // Truncate
+  if (c.w[comp] < 0) c.w[comp] = 0.0;
+  if (c.w[comp] > 1) c.w[comp] = 1.0;
 }
 
 // Return expected number of mutations
@@ -340,7 +349,8 @@ int agg_blx(const vector<Example> training, vector<double>& w) {
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
-  cout << "[AGG-BLX] Genes por cromosoma: "<< w.size()<< endl;
+  cout << "[AGG-BLX] Genes por cromosoma: " << w.size() << endl;
+  cout << "[AGG-BLX] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -387,7 +397,7 @@ int agg_blx(const vector<Example> training, vector<double>& w) {
 
       mutate(pop_temp[selected], gene);
 
-#if DEBUG == 2
+#if DEBUG >= 2
       cout << "[AGG-BLX] Mutación " << i + 1 << ":"
            << " gen " << comp % w.size() << " del cromosoma "
            << (comp / w.size()) << endl;
@@ -435,6 +445,10 @@ int agg_blx(const vector<Example> training, vector<double>& w) {
   // Choose best chromosome as solution
   w = pop.rbegin()->w;
 
+#if DEBUG >= 1
+  cout << "[AGG-BLX] Fitness solución: " << pop.rbegin()->fitness << endl;
+#endif
+
   return age;
 }
 
@@ -451,7 +465,8 @@ int agg_ca(const vector<Example> training, vector<double>& w) {
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
-  cout << "[AGG-CA] Genes por cromosoma: "<< w.size()<< endl;
+  cout << "[AGG-CA] Genes por cromosoma: " << w.size() << endl;
+  cout << "[AGG-CA] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -498,7 +513,7 @@ int agg_ca(const vector<Example> training, vector<double>& w) {
 
       mutate(pop_temp[selected], gene);
 
-#if DEBUG == 2
+#if DEBUG >= 2
       cout << "[AGG-CA] Mutación " << i + 1 << ":"
            << " gen " << comp % w.size() << " del cromosoma "
            << (comp / w.size()) << endl;
@@ -546,6 +561,10 @@ int agg_ca(const vector<Example> training, vector<double>& w) {
   // Choose best chromosome as solution
   w = pop.rbegin()->w;
 
+#if DEBUG >= 1
+  cout << "[AGG-CA] Fitness solución: " << pop.rbegin()->fitness << endl;
+#endif
+
   return age;
 }
 
@@ -565,7 +584,8 @@ int age_blx(const vector<Example> training, vector<double>& w) {
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
-  cout << "[AGE-BLX] Genes por cromosoma: "<< w.size()<< endl;
+  cout << "[AGE-BLX] Genes por cromosoma: " << w.size() << endl;
+  cout << "[AGE-BLX] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -605,7 +625,7 @@ int age_blx(const vector<Example> training, vector<double>& w) {
 
       mutate(pop_temp[selected], gene);
 
-#if DEBUG == 2
+#if DEBUG >= 2
       cout << "[AGE-BLX] Mutación " << i + 1 << ":"
            << " gen " << comp % w.size() << " del cromosoma "
            << (comp / w.size()) << endl;
@@ -626,9 +646,12 @@ int age_blx(const vector<Example> training, vector<double>& w) {
     auto current_best = new_pop.rbegin();
     auto current_second_best = ++new_pop.rbegin();
 
-#if DEBUG >= 1
+#if DEBUG >= 2
     cout << "[AGE-BLX] Fitness mejor hijo: " << current_best->fitness << endl;
-    cout << "[AGE-BLX] Peor fitness población anterior: " << pop.begin()->fitness << endl;
+    cout << "[AGE-BLX] Fitness segundo mejor hijo " << current_second_best->fitness << endl;
+    cout << "[AGE-BLX] Peor fitness población anterior: " << worst->fitness << endl;
+    cout << "[AGE-BLX] Segundo peor fitness población anterior: "
+         << second_worst->fitness << endl;
 #endif
 
     // NOTE: This replacement scheme is only valid when SIZE_AGE == 2
@@ -669,6 +692,10 @@ int age_blx(const vector<Example> training, vector<double>& w) {
   // Choose best chromosome as solution
   w = pop.rbegin()->w;
 
+#if DEBUG >= 1
+  cout << "[AGE-BLX] Fitness solución: " << pop.rbegin()->fitness << endl;
+#endif
+
   return age;
 }
 
@@ -684,7 +711,8 @@ int age_ca(const vector<Example> training, vector<double>& w) {
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
-  cout << "[AGE-CA] Genes por cromosoma: "<< w.size()<< endl;
+  cout << "[AGE-CA] Genes por cromosoma: " << w.size() << endl;
+  cout << "[AGE-CA] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -724,7 +752,7 @@ int age_ca(const vector<Example> training, vector<double>& w) {
 
       mutate(pop_temp[selected], gene);
 
-#if DEBUG == 2
+#if DEBUG >= 2
       cout << "[AGE-CA] Mutación " << i + 1 << ":"
            << " gen " << comp % w.size() << " del cromosoma "
            << (comp / w.size()) << endl;
@@ -745,9 +773,12 @@ int age_ca(const vector<Example> training, vector<double>& w) {
     auto current_best = new_pop.rbegin();
     auto current_second_best = ++new_pop.rbegin();
 
-#if DEBUG >= 1
-    cout << "[AGE-BLX] Fitness mejor hijo: " << current_best->fitness << endl;
-    cout << "[AGE-BLX] Peor fitness población anterior: " << pop.begin()->fitness << endl;
+#if DEBUG >= 2
+    cout << "[AGE-CA] Fitness mejor hijo: " << current_best->fitness << endl;
+    cout << "[AGE-CA] Fitness segundo mejor hijo " << current_second_best->fitness << endl;
+    cout << "[AGE-CA] Peor fitness población anterior: " << worst->fitness << endl;
+    cout << "[AGE-CA] Segundo peor fitness población anterior: "
+         << second_worst->fitness << endl;
 #endif
 
     // NOTE: This replacement scheme is only valid when SIZE_AGE == 2
@@ -787,6 +818,10 @@ int age_ca(const vector<Example> training, vector<double>& w) {
 
   // Choose best chromosome as solution
   w = pop.rbegin()->w;
+
+#if DEBUG >= 1
+  cout << "[AGE-CA] Fitness solución: " << pop.rbegin()->fitness << endl;
+#endif
 
   return age;
 }
@@ -865,7 +900,7 @@ void run_p2(const string& filename) {
   };
 
   // Run every algorithm
-  for (int p = 2; p < 4; p++) {  // FIXME: bucle completo hasta NUM_ALGORITHMS
+  for (int p = 0; p < 4; p++) {  // FIXME: bucle completo hasta NUM_ALGORITHMS
     cout << "---------" << endl;
     cout << algorithms_names[p] << endl;
     cout << "---------" << endl << endl;
@@ -902,7 +937,7 @@ void run_p2(const string& filename) {
       objective_acum[p] += objective_w;
       time_acum[p] += time_w;
 
-#if DEBUG == 3
+#if DEBUG >= 3
       cout << "Solución:\n[";
       for (auto weight : w)
         cout << weight << ", ";
@@ -925,7 +960,7 @@ void run_p2(const string& filename) {
 
   // Print global (averaged) results
   cout << "------------------------------------------" << endl << endl;
-  for (int p = 2;  p < 4; p++) { // FIXME: bucle completo hasta NUM_ALGORITHMS
+  for (int p = 0;  p < 4; p++) { // FIXME: bucle completo hasta NUM_ALGORITHMS
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
 
       // Print partial results
@@ -957,12 +992,12 @@ int main(int argc, char * argv[]) {
     generator = default_random_engine(seed);
 
     // Dataset 1: colposcopy
-    //run_p2("data/colposcopy_normalizados.csv");
+    run_p2("data/colposcopy_normalizados.csv");
 
     // Dataset 2: ionosphere
     run_p2("data/ionosphere_normalizados.csv");
 
     // Dataset 3: texture
-    //run_p2("data/texture_normalizados.csv");
+    run_p2("data/texture_normalizados.csv");
   }
 }
