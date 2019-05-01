@@ -59,8 +59,11 @@ const float pc = 0.7;
 // Mutation probability
 const float pm = 0.001;
 
+// Local search probaility for memetic algorithms
+const float pls = 0.1;
+
 // Seed for randomness
-int seed = 2019;
+int seed = 21101997;
 
 // Random engine generator
 default_random_engine generator;
@@ -354,12 +357,10 @@ int agg_blx(const vector<Example> training, vector<double>& w) {
   int age = 1;
   int total_genes = w.size() * SIZE_AGG;
   int num_cross = pc * (SIZE_AGG / 2);  // Expected crosses
-  int num_mut = expected_mutations(total_genes);
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
   cout << "[AGG-BLX] Genes por cromosoma: " << w.size() << endl;
-  cout << "[AGG-BLX] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -392,6 +393,7 @@ int agg_blx(const vector<Example> training, vector<double>& w) {
 
     // 4. Mutate intermediate population
     set<int> mutated;
+    int num_mut = expected_mutations(total_genes);
     for (int i = 0; i < num_mut; i++) {
       int comp;
 
@@ -470,12 +472,10 @@ int agg_ca(const vector<Example> training, vector<double>& w) {
   int age = 1;
   int total_genes = w.size() * SIZE_AGG;
   int num_cross = pc * (SIZE_AGG / 2);  // Expected crosses
-  int num_mut = expected_mutations(total_genes);  // Expected mutations
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
   cout << "[AGG-CA] Genes por cromosoma: " << w.size() << endl;
-  cout << "[AGG-CA] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -508,6 +508,7 @@ int agg_ca(const vector<Example> training, vector<double>& w) {
 
     // 4. Mutate intermediate population
     set<int> mutated;
+    int num_mut = expected_mutations(total_genes);  // Expected mutations
     for (int i = 0; i < num_mut; i++) {
       int comp;
 
@@ -594,7 +595,6 @@ int age_blx(const vector<Example> training, vector<double>& w) {
 
 #if DEBUG >= 1
   cout << "[AGE-BLX] Genes por cromosoma: " << w.size() << endl;
-  cout << "[AGE-BLX] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -713,7 +713,6 @@ int age_ca(const vector<Example> training, vector<double>& w) {
 
 #if DEBUG >= 1
   cout << "[AGE-CA] Genes por cromosoma: " << w.size() << endl;
-  cout << "[AGE-CA] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -831,12 +830,10 @@ int am_1(const vector<Example> training, vector<double>& w) {
   int age = 1;
   int total_genes = w.size() * SIZE_AM;
   int num_cross = pc * (SIZE_AM / 2);  // Expected crosses
-  int num_mut = expected_mutations(total_genes);
   uniform_int_distribution<int> random_int(0, total_genes - 1);
 
 #if DEBUG >= 1
   cout << "[AM-(10, 1.0)] Genes por cromosoma: " << w.size() << endl;
-  cout << "[AM-(10, 1.0)] Mutaciones: " << num_mut << endl;
 #endif
 
   // 1. Build and evaluate initial population
@@ -869,6 +866,7 @@ int am_1(const vector<Example> training, vector<double>& w) {
 
     // 4. Mutate intermediate population
     set<int> mutated;
+    int num_mut = expected_mutations(total_genes);
     for (int i = 0; i < num_mut; i++) {
       int comp;
 
@@ -918,7 +916,7 @@ int am_1(const vector<Example> training, vector<double>& w) {
       new_pop.insert(*best_parent);
     }
 
-    // 6. Replace previous population entirely (new generation)
+    // 6. Replace previous population entirely
     pop = new_pop;
 
     // 7. Apply low intensity local search to every chromosome
@@ -942,6 +940,7 @@ int am_1(const vector<Example> training, vector<double>& w) {
     cout << "[AM-(10, 1.0)] Número de iteraciones: " << iter << " -----------" << endl;
 #endif
 
+    // 7. New generation
     age++;
   }
 
@@ -955,12 +954,268 @@ int am_1(const vector<Example> training, vector<double>& w) {
   return age;
 }
 
+// AM-(10, 0.1)
+// Apply local search to chromosomes every 10 generations with probability pls
 int am_2(const vector<Example> training, vector<double>& w) {
+  Population pop;
+  Population::reverse_iterator best_parent;  // Elitism
+  int iter = 0;
+  int age = 1;
+  int total_genes = w.size() * SIZE_AM;
+  int num_cross = pc * (SIZE_AM / 2);  // Expected crosses
+  uniform_int_distribution<int> random_int(0, total_genes - 1);
 
+#if DEBUG >= 1
+  cout << "[AM-(10, 0.1)] Genes por cromosoma: " << w.size() << endl;
+#endif
+
+  // 1. Build and evaluate initial population
+  init_population(pop, SIZE_AM, w.size(), training);
+  iter += SIZE_AM;
+
+  while (iter < MAX_ITER) {
+    IntermediatePopulation pop_temp;
+    Population new_pop;
+
+    best_parent = pop.rbegin();  // Save best parent for elitism
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1)] Mejor fitness actual: "
+           << best_parent->fitness << endl;
+#endif
+
+    // 2. Select intermediate population (already evaluated)
+    pop_temp.resize(SIZE_AM);
+    for (int i = 0; i < SIZE_AM; i++) {
+      pop_temp[i] = selection(pop);
+    }
+
+    // 3. Recombine intermediate population
+    for (int i = 0; i < 2 * num_cross; i += 2) {
+      auto offspring = blx_cross(pop_temp[i], pop_temp[i+1]);
+      pop_temp[i] = offspring.first;
+      pop_temp[i+1] = offspring.second;
+    }
+
+    // 4. Mutate intermediate population
+    set<int> mutated;
+    int num_mut = expected_mutations(total_genes);
+    for (int i = 0; i < num_mut; i++) {
+      int comp;
+
+      // Select (coded) component to mutate, without repetition
+      while(mutated.size() == i) {
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      int selected = comp / w.size();
+      int gene = comp % w.size();
+
+      mutate(pop_temp[selected], gene);
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1)] Mutación " << i + 1 << ":"
+           << " gen " << comp % w.size() << " del cromosoma "
+           << (comp / w.size()) << endl;
+#endif
+
+    }
+
+    // 5. Evaluate, replace original population and apply elitism
+    for (int i = 0; i < SIZE_AM; i++) {
+      if (pop_temp[i].fitness == -1.0) {
+        pop_temp[i].fitness = evaluate(training, pop_temp[i].w);
+        iter++;
+      }
+      new_pop.insert(pop_temp[i]);
+    }
+
+    auto current_best = new_pop.rbegin();
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1)] Mejor fitness intermedio: "
+           << current_best->fitness << endl;
+#endif
+
+    if (current_best->fitness < best_parent->fitness) {
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1)] Reemplazo elitista" << endl;
+#endif
+
+      // Replace worst chromosome of intermediate population
+      new_pop.erase(new_pop.begin());
+      new_pop.insert(*best_parent);
+    }
+
+    // 6. Replace previous population entirely
+    pop = new_pop;
+
+    // 7. Apply low intensity local search to every chromosome
+    if (age % FREQ_BL == 0) {
+
+#if DEBUG >= 1
+      cout << "[AM-(10, 0.1)] Aplica BL" << endl;
+#endif
+
+      // NOTE: Expected applications are pls * SIZE_AM = 0.1 * 10 = 1
+      uniform_int_distribution<int> random_int(0, SIZE_AM - 1);
+      auto it = pop.begin();
+      advance(it, random_int(generator));
+      Chromosome c = *it;
+      iter += low_intensity_local_search(training, c);
+      pop.erase(it);
+      pop.insert(c);
+    }
+
+#if DEBUG >= 1
+    cout << "[AM-(10, 0.1)] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+    // 7. New generation
+    age++;
+  }
+
+  // Choose best chromosome as solution
+  w = pop.rbegin()->w;
+
+#if DEBUG >= 1
+  cout << "[AM-(10, 0.1)] Fitness solución: " << pop.rbegin()->fitness << endl;
+#endif
+
+  return age;
 }
 
+// AM-(10, 0.1)
+// Apply local search to the best 0.1*N chromosomes every 10 generations
 int am_3(const vector<Example> training, vector<double>& w) {
+  Population pop;
+  Population::reverse_iterator best_parent;  // Elitism
+  int iter = 0;
+  int age = 1;
+  int total_genes = w.size() * SIZE_AM;
+  int num_cross = pc * (SIZE_AM / 2);  // Expected crosses
+  uniform_int_distribution<int> random_int(0, total_genes - 1);
 
+#if DEBUG >= 1
+  cout << "[AM-(10, 0.1 mej)] Genes por cromosoma: " << w.size() << endl;
+#endif
+
+  // 1. Build and evaluate initial population
+  init_population(pop, SIZE_AM, w.size(), training);
+  iter += SIZE_AM;
+
+  while (iter < MAX_ITER) {
+    IntermediatePopulation pop_temp;
+    Population new_pop;
+
+    best_parent = pop.rbegin();  // Save best parent for elitism
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1 mej)] Mejor fitness actual: "
+           << best_parent->fitness << endl;
+#endif
+
+    // 2. Select intermediate population (already evaluated)
+    pop_temp.resize(SIZE_AM);
+    for (int i = 0; i < SIZE_AM; i++) {
+      pop_temp[i] = selection(pop);
+    }
+
+    // 3. Recombine intermediate population
+    for (int i = 0; i < 2 * num_cross; i += 2) {
+      auto offspring = blx_cross(pop_temp[i], pop_temp[i+1]);
+      pop_temp[i] = offspring.first;
+      pop_temp[i+1] = offspring.second;
+    }
+
+    // 4. Mutate intermediate population
+    set<int> mutated;
+    int num_mut = expected_mutations(total_genes);
+    for (int i = 0; i < num_mut; i++) {
+      int comp;
+
+      // Select (coded) component to mutate, without repetition
+      while(mutated.size() == i) {
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      int selected = comp / w.size();
+      int gene = comp % w.size();
+
+      mutate(pop_temp[selected], gene);
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1 mej)] Mutación " << i + 1 << ":"
+           << " gen " << comp % w.size() << " del cromosoma "
+           << (comp / w.size()) << endl;
+#endif
+
+    }
+
+    // 5. Evaluate, replace original population and apply elitism
+    for (int i = 0; i < SIZE_AM; i++) {
+      if (pop_temp[i].fitness == -1.0) {
+        pop_temp[i].fitness = evaluate(training, pop_temp[i].w);
+        iter++;
+      }
+      new_pop.insert(pop_temp[i]);
+    }
+
+    auto current_best = new_pop.rbegin();
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1 mej)] Mejor fitness intermedio: "
+           << current_best->fitness << endl;
+#endif
+
+    if (current_best->fitness < best_parent->fitness) {
+
+#if DEBUG >= 2
+      cout << "[AM-(10, 0.1 mej)] Reemplazo elitista" << endl;
+#endif
+
+      // Replace worst chromosome of intermediate population
+      new_pop.erase(new_pop.begin());
+      new_pop.insert(*best_parent);
+    }
+
+    // 6. Replace previous population entirely
+    pop = new_pop;
+
+    // 7. Apply low intensity local search to every chromosome
+    if (age % FREQ_BL == 0) {
+
+#if DEBUG >= 1
+      cout << "[AM-(10, 0.1 mej)] Aplica BL" << endl;
+#endif
+
+      // NOTE: Expected applications are pls * SIZE_AM = 0.1 * 10 = 1
+      auto it = --pop.end();  // Best chromosome
+      Chromosome c = *it;
+      iter += low_intensity_local_search(training, c);
+      pop.erase(it);
+      pop.insert(c);
+    }
+
+#if DEBUG >= 1
+    cout << "[AM-(10, 0.1 mej)] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+    // 7. New generation
+    age++;
+  }
+
+  // Choose best chromosome as solution
+  w = pop.rbegin()->w;
+
+#if DEBUG >= 1
+  cout << "[AM-(10, 0.1 mej)] Fitness solución: " << pop.rbegin()->fitness << endl;
+#endif
+
+  return age;
 }
 
 /*************************************************************************************/
@@ -1021,7 +1276,7 @@ void run_p2(const string& filename) {
   };
 
   // Run every algorithm
-  for (int p = 0; p < 1; p++) {  // FIXME: bucle completo hasta NUM_ALGORITHMS
+  for (int p = 0; p < NUM_ALGORITHMS; p++) {
     cout << "---------" << endl;
     cout << algorithms_names[p] << endl;
     cout << "---------" << endl << endl;
@@ -1081,7 +1336,7 @@ void run_p2(const string& filename) {
 
   // Print global (averaged) results
   cout << "------------------------------------------" << endl << endl;
-  for (int p = 0;  p < 2; p++) { // FIXME: bucle completo hasta NUM_ALGORITHMS
+  for (int p = 0;  p < NUM_ALGORITHMS; p++) {
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
 
       // Print partial results
