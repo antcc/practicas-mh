@@ -63,7 +63,7 @@ const float pm = 0.001;
 const float pls = 0.1;
 
 // Seed for randomness
-int seed = 21101997;
+int seed = 2019;
 
 // Random engine generator
 default_random_engine generator;
