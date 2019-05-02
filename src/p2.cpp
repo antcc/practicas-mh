@@ -2,7 +2,7 @@
  * Metaheurísticas.
  *
  * Problema: APC
- * Práctica 1: algoritmo greedy y búsqueda local.
+ * Práctica 2: algoritmos genéticos y meméticos.
  *
  * Antonio Coín Castro.
  */
@@ -62,12 +62,6 @@ const float pm = 0.001;
 // Local search probaility for memetic algorithms
 const float pls = 0.1;
 
-// Seed for randomness
-int seed = 2019;
-
-// Random engine generator
-default_random_engine generator;
-
 // Number of algorithms
 constexpr int NUM_ALGORITHMS = 7;
 
@@ -81,6 +75,12 @@ const string algorithms_names[NUM_ALGORITHMS] = {
   "AM-(10, 0.1)",
   "AM-(10, 0.1 mej)"
 };
+
+// Seed for randomness
+int seed = 2019;
+
+// Random engine generator
+default_random_engine generator;
 
 // ------------------------------ Data structures -----------------------------------------
 
