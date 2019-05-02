@@ -170,7 +170,6 @@ float evaluate(const vector<Example>& training, const vector<double> w) {
     classified.push_back(classifier_1nn_weights(training[i], training, i, w));
 
   return objective(class_rate(classified, training), red_rate(w));
-
 }
 
 /*************************************************************************************/
