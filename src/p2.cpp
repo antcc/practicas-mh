@@ -210,6 +210,7 @@ int low_intensity_local_search(const vector<Example>& training, Chromosome& c) {
 
     // Acceptance criterion
     c_mut.fitness = evaluate(training, c_mut.w);
+    iter++;
 
     if (c_mut.fitness > best_objective) {
       c = c_mut;
@@ -219,8 +220,6 @@ int low_intensity_local_search(const vector<Example>& training, Chromosome& c) {
     // Update index vector if needed
     if (iter % n == 0)
       shuffle(index.begin(), index.end(), generator);
-
-    iter++;
   }
 
   return iter;
@@ -451,6 +450,10 @@ int agg_blx(const vector<Example> training, vector<double>& w) {
     cout << "[AGG-BLX] Número de iteraciones: " << iter << " -----------" << endl;
 #endif
 
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
+#endif
+
   }
 
   // Choose best chromosome as solution
@@ -564,6 +567,10 @@ int agg_ca(const vector<Example> training, vector<double>& w) {
 
 #if DEBUG >= 1
     cout << "[AGG-CA] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
 #endif
 
   }
@@ -688,6 +695,10 @@ int age_blx(const vector<Example> training, vector<double>& w) {
     cout << "[AGE-BLX] Número de iteraciones: " << iter << " -----------" << endl;
 #endif
 
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
+#endif
+
   }
 
   // Choose best chromosome as solution
@@ -803,6 +814,10 @@ int age_ca(const vector<Example> training, vector<double>& w) {
 
 #if DEBUG >= 1
     cout << "[AGE-CA] Número de iteraciones: " << iter << " -----------" << endl;
+#endif
+
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
 #endif
 
   }
@@ -936,12 +951,17 @@ int am_1(const vector<Example> training, vector<double>& w) {
       pop = new_pop;
     }
 
+    // 7. New generation
+    age++;
+
 #if DEBUG >= 1
     cout << "[AM-(10, 1.0)] Número de iteraciones: " << iter << " -----------" << endl;
 #endif
 
-    // 7. New generation
-    age++;
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
+#endif
+
   }
 
   // Choose best chromosome as solution
@@ -1069,12 +1089,17 @@ int am_2(const vector<Example> training, vector<double>& w) {
       pop.insert(c);
     }
 
+    // 7. New generation
+    age++;
+
 #if DEBUG >= 1
     cout << "[AM-(10, 0.1)] Número de iteraciones: " << iter << " -----------" << endl;
 #endif
 
-    // 7. New generation
-    age++;
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
+#endif
+
   }
 
   // Choose best chromosome as solution
@@ -1200,12 +1225,17 @@ int am_3(const vector<Example> training, vector<double>& w) {
       pop.insert(c);
     }
 
+    // 7. New generation
+    age++;
+
 #if DEBUG >= 1
     cout << "[AM-(10, 0.1 mej)] Número de iteraciones: " << iter << " -----------" << endl;
 #endif
 
-    // 7. New generation
-    age++;
+#if TABLE == 2
+    cout << iter << " " << pop.rbegin()->fitness << endl;
+#endif
+
   }
 
   // Choose best chromosome as solution
@@ -1242,9 +1272,12 @@ void print_results_table(int partition, float class_rate, float red_rate,
 
 // Run every algorithm for a particular dataset and print results
 void run_p2(const string& filename) {
+
+#if TABLE < 2
   cout << "----------------------------------------------------------" << endl;
   cout << "CONJUNTO DE DATOS: " << filename << endl;
   cout << "----------------------------------------------------------" << endl << endl;
+#endif
 
   // Read dataset from file
   vector<Example> dataset;
@@ -1277,9 +1310,12 @@ void run_p2(const string& filename) {
 
   // Run every algorithm
   for (int p = 0; p < NUM_ALGORITHMS; p++) {
+
+#if TABLE < 2
     cout << "---------" << endl;
     cout << algorithms_names[p] << endl;
     cout << "---------" << endl << endl;
+#endif
 
     // Use every possible partition as test
     for (int i = 0; i < K; i++) {
@@ -1335,9 +1371,16 @@ void run_p2(const string& filename) {
   }
 
   // Print global (averaged) results
+
+#if TABLE < 2
   cout << "------------------------------------------" << endl << endl;
+#endif
+
   for (int p = 0;  p < NUM_ALGORITHMS; p++) {
+
+#if TABLE < 2
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
+#endif
 
       // Print partial results
 
