@@ -1400,10 +1400,10 @@ int main(int argc, char * argv[]) {
   if (argc > 1) {
     seed = stoi(argv[1]);
 
-    generator = default_random_engine(seed);
-
-    for (int i = 2; i < argc; i++)
+    for (int i = 2; i < argc; i++) {
+      generator = default_random_engine(seed);
       run_p2(argv[i]);
+    }
   }
 
   else {
@@ -1412,8 +1412,12 @@ int main(int argc, char * argv[]) {
     // Dataset 1: colposcopy
     run_p2("data/colposcopy_normalizados.csv");
 
+    generator = default_random_engine(seed);
+
     // Dataset 2: ionosphere
     run_p2("data/ionosphere_normalizados.csv");
+
+    generator = default_random_engine(seed);
 
     // Dataset 3: texture
     run_p2("data/texture_normalizados.csv");
