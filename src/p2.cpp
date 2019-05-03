@@ -163,7 +163,7 @@ float objective(float class_rate, float red_rate) {
 }
 
 // Evaluate a solution
-float evaluate(const vector<Example>& training, const vector<double> w) {
+float evaluate(const vector<Example>& training, const vector<double>& w) {
   vector<string> classified;
 
   for (int i = 0; i < training.size(); i++)
