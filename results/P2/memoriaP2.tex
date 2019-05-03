@@ -188,13 +188,32 @@ Por su parte, la solución es un \verb|vector<double>| del mismo tamaño que el 
 \label{representacion}
 \addcontentsline{toc}{subsection}{\nameref{representacion}}
 
+Para el desarrollo de los diferentes algoritmos genéticos consideramos una estructura común que representa un cromosoma. En este contexto, un cromosoma será un vector de pesos (una posible solución) ya evaluado, es decir, junto con el valor que la función objetivo le otorga (\textit{fitness}).
 
+\begin{verbatim}
+	struct Chromosome {
+	    vector<double> w;
+	    float fitness;
+	}
+\end{verbatim}
 
+Para representar una población de soluciones (un conjunto de cromosomas) utilizamos el tipo de dato \verb|multiset|: un contenedor asociativo ordenado y que admite repetidos. Esto último es importante, pues en un momento dado podemos concebir una población con varios cromosomas iguales. El orden que definimos entre cromosomas se puede adivinar fácilmente: si $c_1$ y $c_2$ son cromosomas, diremos que $c_1 < c_2$ si $c_1.\text{fitness} < c_2.\text{fitness}$.
 
+\begin{verbatim}
+// Custom comparator for chromosomes
+struct ChromosomeComp {
+  bool operator()(const Chromosome& lhs, const Chromosome& rhs) {
+    return lhs.fitness < rhs.fitness;
+  }
+};
 
+// Population
+typedef multiset<Chromosome, ChromosomeComp> Population;
+\end{verbatim}
 
+Un último detalle en cuanto a la representación de 
 
-
+se puede pasar de 15.000
 
 
 
