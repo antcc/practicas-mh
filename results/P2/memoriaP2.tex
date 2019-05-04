@@ -197,7 +197,9 @@ Para el desarrollo de los diferentes algoritmos genéticos consideramos una estr
 	}
 \end{verbatim}
 
-Para representar una población de soluciones (un conjunto de cromosomas) utilizamos el tipo de dato \verb|multiset|: un contenedor asociativo ordenado y que admite repetidos. Esto último es importante, pues en un momento dado podemos concebir una población con varios cromosomas iguales. El orden que definimos entre cromosomas se puede adivinar fácilmente: si $c_1$ y $c_2$ son cromosomas, diremos que $c_1 < c_2$ si $c_1.\text{fitness} < c_2.\text{fitness}$.
+El valor por defecto del \textit{fitness} de un cromosoma es $-1$. Esto será útil para saber que un cromosoma aún no está evaluado.\\
+
+Para representar una población de soluciones (un conjunto de cromosomas) utilizamos el tipo de dato \verb|multiset|: un contenedor asociativo y ordenado que admite repetidos. Esto último es importante, pues en un momento dado podemos concebir una población con varios cromosomas iguales. El orden que definimos entre cromosomas se puede adivinar fácilmente: si $c_1$ y $c_2$ son cromosomas, diremos que $c_1 < c_2$ si $c_1.\text{fitness} < c_2.\text{fitness}$.
 
 \begin{verbatim}
 // Custom comparator for chromosomes
@@ -211,29 +213,23 @@ struct ChromosomeComp {
 typedef multiset<Chromosome, ChromosomeComp> Population;
 \end{verbatim}
 
-Un último detalle en cuanto a la representación de 
-
-se puede pasar de 15.000
-
-
-
+Un último detalle en cuanto a la representación de la población es que en ciertas fases del algoritmo no es necesario mantener los cromosomas ordenados. Aprovechando esto podemos introducir un nuevo tipo de dato llamado \verb|IntermediatePopulation|, que no es más que un \verb|vector<Chromosome>|, y beneficiarnos de la posibilidad de acceso aleatorio que ofrece este contenedor.
 
 \subsection*{{\color{red}Operadores comunes P1}}
 
-Todos los algoritmos hacen uso del cálculo de la distancia. Como dijimos, para este cálculo se emplea la distancia euclídea, eventualmente ponderada mediante un vector de pesos. En el caso de que la distancia deseada sea la estándar, se asume que los pesos valen siempre $1$ (en la implementación realmente hay dos funciones separadas, una con pesos y otra sin pesos).\\
+Todos los algoritmos hacen uso del cálculo de la distancia. Como dijimos, para este cálculo se emplea la distancia euclídea, eventualmente ponderada mediante un vector de pesos. En el caso de que la distancia deseada sea la estándar, se asume que los pesos valen siempre $1$ (en la implementación realmente hay dos funciones separadas, una con pesos y otra sin pesos).
 
-\newpage 
-
-\begin{algorithm}[h]
+\begin{algorithm}[ht!]
 \begin{algorithmic}
 
 \Function{distance\_sq\_weights}{e1, e2, w}
      \State distance = $0$
-     \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de características}
+     \For{i $:=$ $0$ to $n-1$}  \Comment{$n$ es el número de características}
          \If {w[i] $\geq$ 0.2}
-            \State distance += w[i] * (e2[i] - e1[i]) * (e2[i] - e1[i])
+            \State distance += w[i] $\ast$ (e2[i] - e1[i]) $\ast$ (e2[i] - e1[i])
          \EndIf
      \EndFor
+     \State \Return distance
 \EndFunction
 
 \end{algorithmic}
@@ -249,7 +245,7 @@ También tenemos la función \verb|classifier_1nn_weights|, que clasifica un eje
 \Function{classifier\_1nn\_weights}{e, training, self, w}
      \State selected = $0$
      \State dmin = $\infty$
-     \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de ejemplos de entrenamiento}
+     \For{i $:=$ $0$ to $n-1$}  \Comment{$n$ es el número de ejemplos de entrenamiento}
          \If {i $\neq$ self}
             \State dist = distance\_sq\_weights(e, training[i], w)
             \If {dist $<$ dmin}
@@ -268,6 +264,8 @@ También tenemos la función \verb|classifier_1nn_weights|, que clasifica un eje
 \label{comunes}
 \addcontentsline{toc}{subsection}{\nameref{comunes}}
 
+En lo que sigue, para generar números aleatorios reales o enteros utilizamos los tipos predefinidos \verb|uniform_real_distribution| y \verb|uniform_int_distribution|, respectivamente.\\
+
 En primer lugar, se añade una función para \textit{evaluar} un vector de pesos sobre un conjunto de entrenamiento, que devuelve el valor de la función objetivo o \textit{fitness} que obtiene dicho vector. Esta es justo la métrica que vamos a usar para comparar dos vectores de pesos y decidir cuál de ellos es mejor. Es necesario emplear la técnica \textit{leave-one-out}, ya implementada en el clasificador con pesos.
 
 \begin{algorithm}[ht]
@@ -275,8 +273,8 @@ En primer lugar, se añade una función para \textit{evaluar} un vector de pesos
 
 \Function{evaluate}{training, w}
     \State classified = $\emptyset$
-    \For {i $:=$ $0$ to $n-1$}  \Comment n es el número de ejemplos de entrenamiento
-        \State classified.push\_back(classifier\_1nn\_weights(training[i], training, i, w)) 
+    \For {i $:=$ $0$ to $n-1$}  \Comment $n$ es el número de ejemplos de entrenamiento
+        \State classified.push\_back(classifier\_1nn\_weights(training[i], training, i, w))
     \EndFor  
 \State \Return objective(class\_rate(classified, training), red\_rate(w))
 \EndFunction
@@ -284,13 +282,96 @@ En primer lugar, se añade una función para \textit{evaluar} un vector de pesos
 \end{algorithmic}
 \end{algorithm}
 
+Disponemos de una función \verb|init_population| que se encarga de generar la población inicial, siguiendo como se pide una distribución uniforme en $[0,1]$ para los pesos.\\
+
+\begin{algorithm}[ht!]
+\begin{algorithmic}
+
+\Function{init\_population}{training, n, m}
+    \State pop = $\emptyset$
+    \For {i $:=$ $0$ to $n-1$}  \Comment $n$ es el número cromosomas a crear
+        \For {j $:=$ $0$ to $m-1$}  \Comment $m$ es el número de genes por cromosoma
+            \State c.w[j] = random\_real($0$, $1$)
+        \EndFor
+        \State c.fitness = evaluate(training, c.w)
+        \State pop.insert(p)
+    \EndFor  
+\State \Return pop
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+Pasamos ya a describir los operadores genéticos comunes a todos los algoritmos desarrollados. El operador de \textbf{selección} realiza un torneo binario entre dos padres escogidos al azar, y devuelve el ganador (aquel que tenga mayor valor de \textit{fitness}). Las particularidades del tipo de dato escogido para representar una población nos obligan a manipular iteradores para seleccionar un elemento aleatorio de la población.
+
+\newpage
+
+\begin{algorithm}[ht]
+\begin{algorithmic}
+
+\Function{selection}{population}
+    \State p1 = advance(population.begin(), random\_int($0$, $n-1$)  \Comment{$n$ es el tamaño de la población}
+    \State p2 = advance(population.begin(), random\_int($0$, $n-1$)
+    \State \Return {p1$\rightarrow$fitness $<$ p2$\rightarrow$fitness $?$ $\ast$p2 $:$ $\ast$p1}
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+El operador de \textbf{cruce blx} recibe dos cromosomas y devuelve dos descendientes, cuyos pesos se obtienen de forma aleatoria en un intervalo concreto que depende de los pesos de los padres. La exploración que realiza está determinada por el valor del parámetro $\alpha_{\text{blx}}$, que en nuestro caso es $0.3$. Notamos que eventualmente podríamos generar pesos fuera de $[0,1]$, y sería necesario truncarlos a $0$ ó a $1$.
+
+\begin{algorithm}[ht]
+\begin{algorithmic}
+
+\Function{blx\_cross}{c1, c2}
+    \For {i $:=$ $0$ to $n-1$}  \Comment {$n$ es el número de genes}
+        \State cmin = min(c1.w[i], c2.w[i])
+        \State cmax = max(c1.w[i], c2.w[i])
+        \State diff = cmax - cmin
+        
+        \State h1.w[i] = random\_real(cmin - diff $\ast$ $\alpha_{\text{blx}}$, cmax + diff $\ast$ $\alpha_{\text{blx}}$)
+        \State h1.w[i] = random\_real(cmin - diff $\ast$ $\alpha_{\text{blx}}$, cmax + diff $\ast$ $\alpha_{\text{blx}}$)
+        
+        \State truncate(h1)
+        \State truncate(h2)
+    \EndFor
+    
+    \State \Return (h1, h2)
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+Por su parte, el operador de \textbf{cruce aritmético} recibe dos cromosomas y devuelve un único cromosoma, cuyos pesos resultan de realizar la media aritmética de los pesos de los padres, componente a componente.
 
 
+\begin{algorithm}[ht!]
+\begin{algorithmic}
 
+\Function{arithmetic\_cross}{c1, c2}
+    \For {i $:=$ $0$ to $n-1$}  \Comment {$n$ es el número de genes}
+        \State h.w[i] = (c1.w[i] + c2.w[i]) $/$ 2
+    \EndFor
+    \State \Return h
+\EndFunction
 
+\end{algorithmic}
+\end{algorithm}
 
+Por último, el operador de \textbf{mutación} simplemente altera una componente elegida de un cromosoma por un valor distribuido según una normal de media $0$ y desviación típica $\sigma = 0.3$. En este caso también es posible que tengamos que truncar los pesos antes de devolver el cromosoma mutado.
 
+\begin{algorithm}[ht!]
+\begin{algorithmic}
 
+\Function{mutate}{c, gene}
+    \State c.w[gene] += normal($0$, $0.3$)
+    \State c.fitness = $-1$  \Comment {es necesario volver a evaluarlo}
+    \State truncate(c)
+    \State \Return{c}
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
 
 \subsection*{{\color{red}Función objetivo}}
 
@@ -339,6 +420,14 @@ Para calcular la tasa de clasificación y de reducción utilizamos otras funcion
 \newpage
 \section{Descripción de los algoritmos considerados}
 En esta sección se describen los algoritmos implementados en esta práctica para el problema del APC. En todos ellos lo que se pretende es rellenar un vector de pesos para maximizar la función objetivo.
+
+\subsection*{Consideraciones comunes}
+\label{comunes}
+\addcontentsline{toc}{subsection}{\nameref{comunes}}
+
+Todos los algoritmos desarrollados comparten una serie de comportamientos, que detallamos a continuación con el fin de evitar repeticiones.
+
+
 
 \subsection*{Algoritmo de búsqueda local de baja intensidad}
 \label{bl}
@@ -397,12 +486,14 @@ Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un n�
 \label{agg-blx}
 \addcontentsline{toc}{subsection}{\nameref{agg-blx}}
 
+se puede pasar de 15.000
+
 \newpage
 \section{Procedimiento considerado para desarrollar la práctica}
 
 Todo el código de la práctica se ha desarrollado en C++ siguiendo el estándar 2011. Se utiliza la biblioteca \verb|std| y otras bibliotecas auxiliares, pero no se ha hecho uso de ningún \textit{framework} de metaheurísticas.\\
 
-Para todos los procedimientos que implican aleatoreidad se utiliza un generador de números aleatorios común (llamado \verb|gen|), inicializado con una semilla concreta. La semilla por defecto es $2019$, aunque se puede especificar otra mediante línea de comandos. La evaluación de todos los algoritmos considerados se realiza mediante la función \verb|run_p2|, que también se encarga de recoger las estadísticas oportunas.\\
+Para todos los procedimientos que implican aleatoreidad se utiliza un generador de números aleatorios común (llamado \verb|generator|), inicializado con una semilla concreta. La semilla por defecto es $2019$, aunque se puede especificar otra mediante línea de comandos. La evaluación de todos los algoritmos considerados se realiza mediante la función \verb|run_p2|, que también se encarga de recoger las estadísticas oportunas.\\
 
 Se proporciona un makefile para compilar los archivos y generar un ejecutable (con optimización \verb|-O3|), mediante la orden \verb|make p2|. A la hora de ejecutarlo hay dos opciones:
 
@@ -449,54 +540,54 @@ A continuación se muestran las tablas de unos resultados obtenidos para cada un
 
 Para cada conjunto de datos se muestra una tabla con cada una de las 5 ejecuciones realizadas, de acuerdo a la técnica $5-$\textit{fold cross validation}. En cada una de ellas se muestran los valores de la tasa de clasificación (Clas), tasa de reducción (Red), función objetivo (Agr) y tiempo de ejecución (T) \textbf{en segundos}. Además, se muestra finalmente una tabla global con los resultados medios de cada conjunto de datos para todos los algoritmos. Esta información también se recoge en la última fila de las tablas de cada algoritmo.\\
 
-\textbf{Clasificador $\boldsymbol{1-}$NN sin pesos}
+{\color{red}\textbf{Clasificador $\boldsymbol{1-}$NN sin pesos}}
 
 \begin{table}[h]
 \begin{tabular}{ccccc|cccc|cccc}
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
-1 & 69.49 & 0.00 & 34.75 & 0.74 & 88.73 & 0.00 & 44.37 & 0.60 & 93.64 & 0.00 & 46.82 & 1.98\\
-2 & 75.44 & 0.00 & 37.72 & 0.73 & 90.00 & 0.00 & 45.00 & 0.58 & 96.36 & 0.00 & 48.18 & 1.68\\
-3 & 70.18 & 0.00 & 35.09 & 0.77 & 91.43 & 0.00 & 45.71 & 0.58 & 92.73 & 0.00 & 46.36 & 1.72\\
-4 & 77.19 & 0.00 & 38.60 & 0.72 & 81.43 & 0.00 & 40.71 & 0.58 & 89.09 & 0.00 & 44.55 & 1.68\\
-5 & 82.46 & 0.00 & 41.23 & 0.71 & 85.71 & 0.00 & 42.86 & 0.58 & 97.27 & 0.00 & 48.64 & 1.68\\
+1 & 69.49 & 0.00 & 34.75 & 0.001 & 88.73 & 0.00 & 44.37 & 0.001 & 93.64 & 0.00 & 46.82 & 0.002\\
+2 & 75.44 & 0.00 & 37.72 & 0.001 & 90.00 & 0.00 & 45.00 & 0.001 & 96.36 & 0.00 & 48.18 & 0.002\\
+3 & 70.18 & 0.00 & 35.09 & 0.001 & 91.43 & 0.00 & 45.71 & 0.001 & 92.73 & 0.00 & 46.36 & 0.002\\
+4 & 77.19 & 0.00 & 38.60 & 0.001 & 81.43 & 0.00 & 40.71 & 0.001 & 89.09 & 0.00 & 44.55 & 0.002\\
+5 & 82.46 & 0.00 & 41.23 & 0.001 & 85.71 & 0.00 & 42.86 & 0.001 & 97.27 & 0.00 & 48.64 & 0.002\\
 \hline
-$\bar{x}$  & 74.95 & 0.00 & 37.48 & 0.73 & 87.46 & 0.00 & 43.73 & 0.58 & 93.82 & 0.00 & 46.91 & 1.75
+$\bar{x}$  & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82 & 0.00 & 46.91 & 0.002
 \end{tabular}
 \end{table}
 
 
 \newpage
 
-\textbf{Algoritmo RELIEF}
+{\color{red}\textbf{Algoritmo RELIEF}}
 
 \begin{table}[h]
 \begin{tabular}{ccccc|cccc|cccc}
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
-1 & 69.49 & 37.10 & 53.29 & 3.99 & 91.55 & 2.94 & 47.25 & 3.45 & 97.27 & 7.50 & 52.39 & 11.24\\
-2 & 73.68 & 33.87 & 53.78 & 4.05 & 91.43 & 2.94 & 47.18 & 3.61 & 97.27 & 5.00 & 51.14 & 12.00\\
-3 & 70.18 & 17.74 & 43.96 & 4.23 & 91.43 & 2.94 & 47.18 & 3.44 & 92.73 & 5.00 & 48.86 & 10.08\\
-4 & 78.95 & 62.90 & 70.93 & 4.07 & 82.86 & 2.94 & 42.90 & 3.48 & 89.09 & 2.50 & 45.80 & 9.88\\
-5 & 80.70 & 40.32 & 60.51 & 4.12 & 85.71 & 2.94 & 44.33 & 3.43 & 97.27 & 12.50 & 54.89 & 9.62\\
+1 & 69.49 & 37.10 & 53.29 & 0.004 & 91.55 & 2.94 & 47.25 & 0.003 & 97.27 & 7.50 & 52.39 & 0.01\\
+2 & 73.68 & 33.87 & 53.78 & 0.004 & 91.43 & 2.94 & 47.18 & 0.003 & 97.27 & 5.00 & 51.14 & 0.01\\
+3 & 70.18 & 17.74 & 43.96 & 0.004 & 91.43 & 2.94 & 47.18 & 0.003 & 92.73 & 5.00 & 48.86 & 0.01\\
+4 & 78.95 & 62.90 & 70.93 & 0.004 & 82.86 & 2.94 & 42.90 & 0.003 & 89.09 & 2.50 & 45.80 & 0.01\\
+5 & 80.70 & 40.32 & 60.51 & 0.004 & 85.71 & 2.94 & 44.33 & 0.003 & 97.27 & 12.50 & 54.89 & 0.01\\
 \hline
-$\bar{x}$ & 74.60 & 38.39 & 56.49 & 4.09 & 88.60 & 2.94 & 45.77 & 3.48 & 94.73 & 6.50 & 50.61 & 10.56
+$\bar{x}$ & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.003 & 94.73 & 6.50 & 50.61 & 0.01
 \end{tabular}
 \end{table}
 
-\textbf{Algoritmo de búsqueda local}
+{\color{red}\textbf{Algoritmo de búsqueda local}}
 
 \begin{table}[h]
 \begin{tabular}{ccccc|cccc|cccc}
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
-1 & 77.97 & 82.26 & 80.11 & 19395 & 84.51 & 82.35 & 83.43 & 3285 & 88.18 & 77.50 & 82.84 & 21465\\
-2 & 68.42 & 77.42 & 72.92 & 10405 & 82.86 & 85.29 & 84.08 & 5334 & 88.18 & 80.00 & 84.09 & 14294\\
-3 & 75.44 & 85.48 & 80.46 & 15763 & 80.00 & 91.18 & 85.59 & 9516 & 92.73 & 82.50 & 87.61 & 25764\\
-4 & 71.93 & 82.26 & 77.09 & 16191 & 90.00 & 91.18 & 90.59 & 10026 & 84.55 & 85.00 & 84.77 & 14206\\
-5 & 77.19 & 75.81 & 76.50 & 16671 & 85.71 & 82.35 & 84.03 & 4443 & 93.64 & 87.50 & 90.57 & 24355\\
+1 & 77.97 & 82.26 & 80.11 & 19.395 & 84.51 & 82.35 & 83.43 & 3.285 & 88.18 & 77.50 & 82.84 & 21.465\\
+2 & 68.42 & 77.42 & 72.92 & 10.405 & 82.86 & 85.29 & 84.08 & 5.334 & 88.18 & 80.00 & 84.09 & 14.294\\
+3 & 75.44 & 85.48 & 80.46 & 15.763 & 80.00 & 91.18 & 85.59 & 9.516 & 92.73 & 82.50 & 87.61 & 25.764\\
+4 & 71.93 & 82.26 & 77.09 & 16.191 & 90.00 & 91.18 & 90.59 & 10.026 & 84.55 & 85.00 & 84.77 & 14.206\\
+5 & 77.19 & 75.81 & 76.50 & 16.671 & 85.71 & 82.35 & 84.03 & 4.443 & 93.64 & 87.50 & 90.57 & 24.355\\
 \hline
-$\bar{x}$  & 74.19 & 80.65 & 77.42 & 15685 & 84.62 & 86.47 & 85.54 & 6521 & 89.45 & 82.50 & 85.98 & 20017
+$\bar{x}$  & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89.45 & 82.50 & 85.98 & 20.017
 \end{tabular}
 \end{table}
 
@@ -507,9 +598,9 @@ $\bar{x}$  & 74.19 & 80.65 & 77.42 & 15685 & 84.62 & 86.47 & 85.54 & 6521 & 89.4
 \begin{tabular}{ccccc|cccc|cccc}
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Alg} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
-1-NN & 74.95 & 0.00 & 37.48 & 0.73 & 87.46 & 0.00 & 43.73 & 0.58 & 93.82 & 0.00 & 46.91 & 1.75\\
-RELIEF & 74.60 & 38.39 & 56.49 & 4.09 & 88.60 & 2.94 & 45.77 & 3.48 & 94.73 & 6.50 & 50.61 & 10.56\\
-BL & 74.19 & 80.65 & 77.42 & 15685 & 84.62 & 86.47 & 85.54 & 6521 & 89.45 & 82.50 & 85.98 & 20017\\
+1-NN & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82 & 0.00 & 46.91 & 0.002\\
+RELIEF & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.004 & 94.73 & 6.50 & 50.61 & 0.01\\
+BL & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89.45 & 82.50 & 85.98 & 20.017\\
 \end{tabular}
 \end{table}
 
@@ -530,6 +621,8 @@ Por último, cabe destacar que en cuanto a la tasa de clasificación, el algorit
 \subsection*{Análisis de resultados P2}
 \label{analisis}
 \addcontentsline{toc}{subsection}{\nameref{analisis}}
+
+cambiando parámetros, hay más libertad, etc
 
 \end{document}
 
