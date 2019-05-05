@@ -77,7 +77,7 @@ const string algorithms_names[NUM_ALGORITHMS] = {
 };
 
 // Seed for randomness
-int seed = 2019;
+long seed = 2019;
 
 // Random engine generator
 default_random_engine generator;
