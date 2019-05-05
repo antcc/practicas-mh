@@ -213,6 +213,8 @@ struct ChromosomeComp {
 typedef multiset<Chromosome, ChromosomeComp> Population;
 \end{verbatim}
 
+Así, cuando queramos obtener el mejor cromosoma de la población miraremos el último elemento del contenedor, y cuando queramos el peor miraremos el primer elemento.\\
+
 Un último detalle en cuanto a la representación de la población es que en ciertas fases del algoritmo no es necesario mantener los cromosomas ordenados. Aprovechando esto podemos introducir un nuevo tipo de dato llamado \verb|IntermediatePopulation|, que no es más que un \verb|vector<Chromosome>|, y beneficiarnos de la posibilidad de acceso aleatorio que ofrece este contenedor.
 
 \subsection*{{\color{red}Operadores comunes P1}}
@@ -261,8 +263,8 @@ También tenemos la función \verb|classifier_1nn_weights|, que clasifica un eje
 \end{algorithm}
 
 \subsection*{Operadores comunes P2}
-\label{comunes}
-\addcontentsline{toc}{subsection}{\nameref{comunes}}
+\label{op_comunes}
+\addcontentsline{toc}{subsection}{\nameref{op_comunes}}
 
 En lo que sigue, para generar números aleatorios reales o enteros utilizamos los tipos predefinidos \verb|uniform_real_distribution| y \verb|uniform_int_distribution|, respectivamente.\\
 
@@ -304,9 +306,7 @@ Disponemos de una función \verb|init_population| que se encarga de generar la p
 
 Pasamos ya a describir los operadores genéticos comunes a todos los algoritmos desarrollados. El operador de \textbf{selección} realiza un torneo binario entre dos padres escogidos al azar, y devuelve el ganador (aquel que tenga mayor valor de \textit{fitness}). Las particularidades del tipo de dato escogido para representar una población nos obligan a manipular iteradores para seleccionar un elemento aleatorio de la población.
 
-\newpage
-
-\begin{algorithm}[ht]
+\begin{algorithm}[h!]
 \begin{algorithmic}
 
 \Function{selection}{population}
@@ -342,8 +342,7 @@ El operador de \textbf{cruce blx} recibe dos cromosomas y devuelve dos descendie
 \end{algorithmic}
 \end{algorithm}
 
-Por su parte, el operador de \textbf{cruce aritmético} recibe dos cromosomas y devuelve un único cromosoma, cuyos pesos resultan de realizar la media aritmética de los pesos de los padres, componente a componente.
-
+Por su parte, el operador de \textbf{cruce aritmético} recibe dos cromosomas y devuelve un único cromosoma, cuyos pesos resultan de realizar la media aritmética de los pesos de los padres, componente a componente.\\
 
 \begin{algorithm}[ht!]
 \begin{algorithmic}
@@ -360,6 +359,7 @@ Por su parte, el operador de \textbf{cruce aritmético} recibe dos cromosomas y 
 
 Por último, el operador de \textbf{mutación} simplemente altera una componente elegida de un cromosoma por un valor distribuido según una normal de media $0$ y desviación típica $\sigma = 0.3$. En este caso también es posible que tengamos que truncar los pesos antes de devolver el cromosoma mutado.
 
+
 \begin{algorithm}[ht!]
 \begin{algorithmic}
 
@@ -373,6 +373,8 @@ Por último, el operador de \textbf{mutación} simplemente altera una componente
 \end{algorithmic}
 \end{algorithm}
 
+\vspace{-1.5em}
+
 \subsection*{{\color{red}Función objetivo}}
 
 La función objetivo que queremos maximizar se implementa tal y como se dijo en la descripción del problema, donde el valor $\alpha$ prefijado es de 0.5, dando la misma importancia a la precisión y a la simplicidad.
@@ -385,7 +387,7 @@ objective(class_rate, red_rate) {
 
 Para calcular la tasa de clasificación y de reducción utilizamos otras funciones también muy sencillas. La primera mide el porcentaje de acierto sobre un vector de elementos que el clasificador ha clasificado, y cuya clase real conocemos. La segunda simplemente contabiliza qué porcentaje de los pesos son menores que $0.2$.
 
-\begin{algorithm}[h]
+\begin{algorithm}[h!]
 \begin{algorithmic}
 
 \Function{class\_rate}{classified, test}
@@ -401,7 +403,9 @@ Para calcular la tasa de clasificación y de reducción utilizamos otras funcion
 \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[h]
+\vspace{-1em}
+
+\begin{algorithm}[h!]
 \begin{algorithmic}
 
 \Function{red\_rate}{w}
@@ -417,6 +421,7 @@ Para calcular la tasa de clasificación y de reducción utilizamos otras funcion
 \end{algorithmic}
 \end{algorithm}
 
+
 \newpage
 \section{Descripción de los algoritmos considerados}
 En esta sección se describen los algoritmos implementados en esta práctica para el problema del APC. En todos ellos lo que se pretende es rellenar un vector de pesos para maximizar la función objetivo.
@@ -425,9 +430,82 @@ En esta sección se describen los algoritmos implementados en esta práctica par
 \label{comunes}
 \addcontentsline{toc}{subsection}{\nameref{comunes}}
 
-Todos los algoritmos desarrollados comparten una serie de comportamientos, que detallamos a continuación con el fin de evitar repeticiones.
+Todos los algoritmos desarrollados comparten una serie de comportamientos, que detallamos a continuación con el fin de evitar repeticiones.\\
 
+Tenemos un contador \verb|iter| para llevar la cuenta del número de evaluaciones de la función objetivo que realizamos, y salimos del bucle principal de los algoritmos cuando superamos las $15.000$ evaluaciones.\\
 
+En general, la evolución de la población inicial se lleva a cabo mediante una población intermedia \verb|pop_temp|, de tipo \verb|IntermediatePopulation|, a la que podemos acceder por índices. El proceso de \textbf{selección} de un número concreto ($n$) de padres se realiza siempre de la misma manera:
+
+\begin{verbatim}
+SELECT(n):
+    for (i := 0 to n - 1)
+      pop_temp[i] = selection(pop)
+\end{verbatim}
+
+El proceso de \textbf{cruce} de $2n$ padres sigue también un esquema similar, con pequeñas diferencias (de implementación) entre el cruce aritmético y el blx.
+
+\begin{verbatim}
+BLX(n):
+    for (i := 0 to 2 * n - 1 step 2)
+      pop_temp[i], pop_temp[i+1] = blx_cross(pop_temp[i], pop_temp[i+1])
+\end{verbatim}
+
+Llamando $p$ al tamaño de la población intermedia, en el cruce aritmético nos aseguraremos de que $4n \leq p$, para que no disminuya el tamaño de la población (este cruce nos devuelve un solo hijo por cada dos padres).
+
+\begin{verbatim}
+ARITHMETIC(n, p):
+    for (i := 0 to 2 * n - 1)
+      pop_temp[i] = arithmetic_cross(pop_temp[i], pop_temp[p-i-1])
+\end{verbatim}
+
+Para el esquema de \textbf{mutación} tenemos dos alternativas. La primera es calcular el número esperado de mutaciones de genes, es decir, \verb|num_mut| = $N \cdot M \cdot p_m$, donde $N$ es el número de cromosomas de la población intermedia, $M$ es el número de genes de cada cromosoma, y $p_m$ es la probabilidad de que un gen mute. Ahora, en vez de truncar el valor obtenido, consideramos su parte entera ($PE$) y su parte decimal ($PD$), y en cada iteración del algoritmo se realizan, al menos, tantas mutaciones como indique $PE$. Establecemos la posibilidad de que se realice una mutación extra, generando \textbf{en cada iteración} un número aleatorio $u$ entre $0$ y $1$, y sumando $1$ al número de mutaciones si $u \leq PD$.\\
+	
+Este es el esquema que seguiremos en los algoritmos genéticos generacionales y en los algoritmos meméticos. Además, como queremos introducir diversidad en la población, imponemos que \textbf{al menos se realice una mutación en cada generación}. 
+
+\begin{algorithm}[h]
+\begin{algorithmic}
+
+\Function{num\_mut}{n}
+    \State expected = $p_m \ast$ n  \Comment {n es el número total de genes}
+    
+    \If {expected $\leq$ 1.0} 
+        \State \Return 1
+    \EndIf
+    
+    \State remainder = modf(expected, $\&$expected) \Comment{expected = PE, remainder = PD}
+    \If {random\_real($0$, $1$) $\leq$ remainder}
+        \State expected++
+    \EndIf
+    
+    \State \Return expected
+\EndFunction
+  
+\end{algorithmic}
+\end{algorithm}
+
+También es importante tener en cuenta que al sustituir la comprobación en cada gen por realizar un número fijo de mutaciones, debemos evitar mutar dos veces el mismo gen. Usamos para esto un \verb|set| llamado \verb|mutated|, que no admite repetidos. Para elegir el gen a mutar, miramos la población como una matriz y generamos un entero aleatoriamente entre $0$ y $N\cdot M - 1$.
+
+\begin{verbatim}
+MUTATE1(n, m):	
+\end{verbatim} \vspace{-0.8em}\verb|    mutated =| $\emptyset$ \vspace{-0.5em}
+\begin{verbatim}
+    num_mut = expected_mutations(n * m)
+    for (i := 0 to num_mut - 1) 
+      while(mutated.size() == i) 
+        comp = random_int(0, n * m - 1)
+        mutated.insert(comp)
+      mutate(pop_temp[comp / m], comp % m) 
+\end{verbatim}
+
+La otra alternativa es realizar las mutaciones a nivel de cromosoma. Si $p_m$ es la probabilidad de que mute un solo gen, definimos \verb|pmut| = $p_m \cdot M$ como la probabilidad de que mute un cromosoma (por un solo gen). Esta alternativa es mejor cuando el tamaño de la población intermedia es pequeño, pues en esos casos el número esperado de mutaciones según la primera alternativa será casi siempre $0$. La que usaremos en los AGE. Si $n$ es el tamaño de la población intermedia:
+
+\begin{verbatim}
+MUTATE2(n, m):
+    for (i := 0 to n - 1)
+      if (random_real(0, 1) <= pmut)
+        gene = random_int(0, m - 1)
+        mutate(pop_temp[i], gene)
+\end{verbatim}
 
 \subsection*{Algoritmo de búsqueda local de baja intensidad}
 \label{bl}
@@ -438,25 +516,20 @@ Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar
 La solución inicial sobre la que iterar es la que recibimos como parámetro. A la hora de escoger qué componente vamos a mutar, tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final, volvemos a barajarlo para seguir generando nuevas soluciones.
 
 \begin{verbatim}
-// Initialize index vector and solution
-for (int i = 0; i < n; i++) {
-  index.push_back(i);
-}
-shuffle(index.begin(), index.end(), gen);
+INDEX(n):
+    for (i := 0 to n - 1)
+      index.push_back(i)
+    shuffle(index)
 \end{verbatim}
-
-Para escoger el valor con el que se muta cada componente utilizamos esta vez el tipo predefinido \verb|normal_distribution<double>|. Para determinar si una mutación mejora, utilizamos como métrica el valor de la función objetivo, tomando la tasa de clasificación sobre el propio conjunto de entrenamiento (\textit{leave-one-out}).\\
-
-Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un número fijo (pequeño) de iteraciones, proporcionales al número de características del conjunto de datos que empleamos. Notamos que hemos adaptado el código para funcionar recibiendo un dato del tipo \verb|Chromosome|.
 
 \begin{algorithm}[h!]
 \begin{algorithmic}
 
 \Function{low\_intensity\_local\_search}{training, c}
     \State iter = 0
-    \State index = initialize() \Comment ejecuta el código de inicialización mostrado anteriormente
+    \State index = INDEX(n) \Comment{n es el tamaño de c.w}
     \State best\_objective = c.fitness
-    \While {iter $<$ 2*n}  \Comment{n es el tamaño de c.w}
+    \While {iter $<$ 2*n}  
         \State comp = index[iter $\%$ n]
         \State c\_mut = c
         \State c\_mut.w[comp] += normal(gen)
@@ -473,7 +546,7 @@ Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un n�
         \EndIf
 
         \If {iter $\%$ $n == 0$}
-          \State shuffle(index.begin(), index.end(), gen)
+          \State shuffle(index)
         \EndIf
      \EndWhile
 \State \Return c
@@ -482,11 +555,148 @@ Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un n�
 \end{algorithmic}
 \end{algorithm}
 
-\subsection*{AGG-BLX}
-\label{agg-blx}
-\addcontentsline{toc}{subsection}{\nameref{agg-blx}}
+Para escoger el valor con el que se muta cada componente utilizamos esta vez el tipo predefinido \verb|normal_distribution<double>|. Para determinar si una mutación mejora, utilizamos como métrica el valor de la función objetivo, tomando la tasa de clasificación sobre el propio conjunto de entrenamiento (\textit{leave-one-out}).\\
 
-se puede pasar de 15.000
+Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un número fijo (pequeño) de iteraciones, proporcionales al número de características del conjunto de datos que empleamos. Notamos que hemos adaptado el código para funcionar recibiendo un dato del tipo \verb|Chromosome|.
+
+\subsection*{Algoritmos genéticos generacionales}
+\label{agg}
+\addcontentsline{toc}{subsection}{\nameref{agg}}
+
+El esquema general de los algoritmos genéticos generacionales se muestra a continuación. La única diferencia entre el AGG-BLX y el AGG-CA, aparte del uso de distintos operadores de cruce, es que en el AGG-CA selecciona el doble de padres (60) en el torneo binario, para obtener después 30 hijos tras cruzarlos (recordemos que el operador de cruce aritmético produce un hijo por cada dos padres).\\
+
+Hay que tener en cuenta que como la probabilidad de cruce es $p_c = 0.7$, realizamos el número \textit{esperado} de cruces en cada iteración, que en este caso es $\lfloor 15 \cdot 0.7 \rfloor = 10$.
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{agg}{training, m}
+    \State pop = init\_population(training, 30, m) \Comment{$m$ es el número de genes por cromosoma}
+    \State iter = 30;
+    \State total\_genes = 30 $\ast$ m
+    \State num\_cross = pc $\ast$ (30 / 2);  \Comment {número esperado de cruces}
+
+    \While {iter $<$ $15000$}
+        \State pop\_temp = $\emptyset$  \Comment{sin ordenar}
+        \State new\_pop = $\emptyset$  \Comment{ordenado}
+        \State best\_parent = pop.last()  
+
+        \State SELECT(30) \Comment {SELECT(60) en AGG-CA}
+        \State BLX(num\_cross)  \Comment {ARITHMETIC(num\_cross, 60) en AGG-CA}
+        \State MUTATE1(30, total\_genes)
+
+        \For {i $:=$ $0$ to $30$}  \Comment{reemplazo}
+            \If {pop\_temp[i].fitness == $-1$}
+                \State pop\_temp[i].fitness = evaluate(training, pop\_temp[i].w)
+                \State iter++
+            \EndIf
+            \State new\_pop.insert(pop\_temp[i])
+        \EndFor
+   
+        \State current\_best = new\_pop.last()
+        \If {current\_best->fitness $<$ best\_parent->fitness}  \Comment{elitismo}
+          \State new\_pop.erase(new\_pop.first())
+          \State new\_pop.insert($\ast$best\_parent)
+        \EndIf
+        \State pop = new\_pop \Comment{nueva generación}
+    \EndWhile
+    \State \Return pop.last()->w
+\EndFunction
+  
+\end{algorithmic}
+\end{algorithm}
+
+En el algoritmo AGG-CA seleccionamos $60$ padres para la población intermedia (aunque realmente solo necesitamos 40), pero tras el cruce trabajamos únicamente con los $30$ primeros, respetando el esquema generacional en el que la población intermedia tiene el mismo tamaño que la población original.\\
+
+Observamos que al reemplazar la nueva población nos aseguramos de que todos los cromosomas están correctamente evaluados (y ordenados según su evaluación). Antes de pasar a la siguiente generación aplicamos un comportamiento elitista: si hemos perdido la mejor solución que teníamos en la generación anterior, la introducimos en la nueva eliminando la peor solución de esta.
+
+\subsection*{Algoritmos genéticos estacionarios}
+\label{age}
+\addcontentsline{toc}{subsection}{\nameref{age}}
+
+En este caso, cambiamos el esquema de reemplazamiento con respecto a los algoritmos generacionales. Como ahora la población intermedia es únicamente de dos hijos (que siempre cruzan), también modificamos el esquema de mutación, utilizando la segunda alternativa que comentábamos antes.\\
+
+Los dos cromosomas que componen la población intermedia compiten para entrar en la nueva población con los dos peores de la población anterior, quedándonos al final con los dos mejores de entre los cuatro.
+
+\newpage
+
+\begin{algorithm}[h]
+\begin{algorithmic}
+
+\Function{age}{training, m}
+    \State pop = init\_population(training, 30, m) \Comment{$m$ es el número de genes por cromosoma}
+    \State iter = 30;
+
+    \While {iter $<$ $15000$}
+        \State pop\_temp = $\emptyset$  \Comment{sin ordenar}
+        \State new\_pop = $\emptyset$  \Comment{ordenado} 
+
+        \State SELECT(2) \Comment {SELECT(4) en AGE-CA}
+        \State BLX(1)  \Comment {ARITHMETIC(1, 4) en AGE-CA}
+        \State MUTATE2(30, total\_genes)
+
+        \For {i $:=$ $0$ to $2$}  \Comment{reemplazo}
+            \State pop\_temp[i].fitness = evaluate(training, pop\_temp[i].w)
+            \State iter++
+            \State new\_pop.insert(pop\_temp[i])
+        \EndFor
+        
+        \State worst = pop.first()
+        \State second\_worst = pop.first() + 1
+        \State new\_best = new\_pop.last()
+        \State new\_second\_best = new\_pop.last() - 1
+
+        \If {new\_second\_best->fitness $>$ second\_worst->fitness} \Comment{sobreviven los dos hijos}
+          \State pop.erase(second\_worst);
+          \State pop.erase(worst);
+          \State pop.insert($\ast$new\_second\_best);
+          \State pop.insert($\ast$new\_best);
+        \ElsIf {new\_best->fitness $>$ worst->fitness} \Comment{sobrevive solo el mejor hijo}
+          \State pop.erase(worst);
+          \State pop.insert($\ast$new\_best);
+        \EndIf
+        \State pop = new\_pop \Comment{nueva generación}
+    \EndWhile
+    \State \Return pop.last()->w
+\EndFunction
+  
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Algoritmos meméticos}
+\label{am}
+\addcontentsline{toc}{subsection}{\nameref{am}}
+
+Para implementar los algoritmos meméticos nos basamos en el algoritmo AGG-BLX, que como veremos es el algoritmo generacional que mejores resultados ha proporcionado. En este caso, el tamaño de la población es de $10$ cromosomas.\\
+
+Simplemente vamos contando el número de generaciones mediante una variable \verb|age|, y cada diez generaciones, es decir, si \verb|age % 10 == 0|, aplicamos la búsqueda local de baja intensidad como se pide. Esta aplicación se realiza justo antes de pasar a la siguiente iteración del bucle principal.\\
+
+En la primera versión, aplicamos la búsqueda local a \textbf{todos los cromosomas} de la población. Si $m$ es el número de genes por cromosoma, recordamos que la búsqueda local de baja intensidad realiza siempre $2m$ iteraciones.
+
+\begin{verbatim}
+AM-(10 - 1.0):
+    for (c in pop)
+        c = low_intensity_local_search(training, c)
+        iter += 2 * m
+\end{verbatim}
+
+En la implementación real borramos el cromosoma y lo volvemos a insertar, para así conseguir que se ordene de nuevo dentro de la población. En la segunda versión, aplicamos la búsqueda local a cada cromosoma con una probabilidad de $0.1$, lo que se traduce en $10 \cdot 0.1 = 1$ aplicación esperada.
+
+\begin{verbatim}
+AM-(10 - 0.1):
+    c = pop.first() + random_int(0, 9)
+    *c = low_intensity_local_search(training, *c)
+    iter += 2 * m
+\end{verbatim}
+
+La tercera versión es muy similar a la segunda, solo que en vez de aplicar la búsqueda local a un cromosoma aleatorio de la población, lo hacemos al mejor de ellos.
+
+\begin{verbatim}
+AM-(10 - 0.1 mej):
+    c = pop.last()
+    *c = low_intensity_local_search(training, *c)
+    iter += 2 * m
+\end{verbatim}
 
 \newpage
 \section{Procedimiento considerado para desarrollar la práctica}
