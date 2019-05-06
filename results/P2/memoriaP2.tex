@@ -4,7 +4,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[sfdefault,scaled=.85]{FiraSans}
+\usepackage[sfdefault,scaled=.85, lining]{FiraSans}
 \usepackage{newtxsf}
 \usepackage[spanish]{babel}
 \usepackage{amssymb}
@@ -17,9 +17,10 @@
 \usepackage{adjustbox}
 \usepackage{geometry}
 \usepackage{upgreek}
-\usepackage[scaled=.85]{FiraMono}
+\usepackage[scaled=.85, lining]{FiraMono}
 \usepackage[noend]{algpseudocode}
 \usepackage{algorithm}
+\usepackage[italic]{mathastext}
 \usepackage{hyperref}
 \usepackage{listingsutf8}
 
@@ -771,7 +772,7 @@ $\bar{x}$  & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82
 
 {\color{red}\textbf{Algoritmo RELIEF}}
 
-\begin{table}[h]
+\begin{table}[h!]
 \begin{tabular}{ccccc|cccc|cccc}
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
@@ -787,7 +788,7 @@ $\bar{x}$ & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.003 & 94.73
 
 {\color{red}\textbf{Algoritmo de búsqueda local}}
 
-\begin{table}[h]
+\begin{table}[h!]
 \begin{tabular}{ccccc|cccc|cccc}
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
@@ -801,6 +802,120 @@ $\bar{x}$  & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89
 \end{tabular}
 \end{table}
 
+\textbf{AGG-BLX}
+
+\begin{table}[h!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 69.49 & 75.81 & 72.65 & 39.37  & 91.55 & 82.35 & 86.95 & 31.96  & 82.73 & 85.00 & 83.86 & 95.12 \\
+2 & 77.19 & 83.87 & 80.53 & 41.35  & 90.00 & 82.35 & 86.18 & 32.75  & 86.36 & 82.50 & 84.43 & 98.29 \\
+3 & 71.93 & 75.81 & 73.87 & 42.84  & 85.71 & 82.35 & 84.03 & 32.80  & 90.91 & 82.50 & 86.70 & 97.55 \\
+4 & 78.95 & 79.03 & 78.99 & 43.33  & 90.00 & 91.18 & 90.59 & 32.21  & 89.09 & 85.00 & 87.05 & 94.74 \\
+5 & 78.95 & 79.03 & 78.99 & 41.18  & 92.86 & 85.29 & 89.08 & 31.87  & 87.27 & 85.00 & 86.14 & 94.61 \\
+\hline
+$\bar{x}$  & 75.30 & 78.71 & 77.01 & 41.61 & 90.02 & 84.71 & 87.37 & 32.32  & 87.27 & 84.00 & 85.64 & 96.06
+\end{tabular}
+\end{table}
+
+\textbf{AGG-CA}
+
+\begin{table}[h!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 66.10 & 53.23 & 59.66 & 44.25 & 90.14 & 70.59 & 80.36 & 34.64 & 90.00 & 72.50 & 81.25 & 104.17 \\
+2 & 73.68 & 62.90 & 68.29 & 41.97 & 87.14 & 79.41 & 83.28 & 34.33 & 92.73 & 47.50 & 70.11 & 110.94 \\
+3 & 68.42 & 66.13 & 67.28 & 41.98 & 84.29 & 67.65 & 75.97 & 35.47 & 91.82 & 77.50 & 84.66 & 101.03 \\
+4 & 77.19 & 59.68 & 68.44 & 42.22 & 90.00 & 79.41 & 84.71 & 34.06 & 94.55 & 65.00 & 79.77 & 103.46 \\
+5 & 78.95 & 58.06 & 68.51 & 43.45 & 87.14 & 61.76 & 74.45 & 37.41 & 93.64 & 75.00 & 84.32 & 103.85 \\
+\hline
+$\bar{x}$ & 72.87 & 60.00 & 66.43 & 42.77 & 87.74 & 71.76 & 79.75 & 35.18 & 92.55 & 67.50 & 80.02 & 104.69 \\
+\end{tabular}
+\end{table}
+
+
+\textbf{AGE-BLX}
+
+\begin{table}[ht!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 77.97 & 79.03 & 78.50 & 37.96 & 91.55 & 88.24 & 89.89 & 32.51 & 90.00 & 87.50 & 88.75 & 98.55 \\
+2 & 71.93 & 80.65 & 76.29 & 41.37 & 85.71 & 85.29 & 85.50 & 32.56 & 92.73 & 85.00 & 88.86 & 94.33 \\
+3 & 73.68 & 80.65 & 77.16 & 40.29 & 85.71 & 85.29 & 85.50 & 33.59 & 90.00 & 80.00 & 85.00 & 96.19 \\
+4 & 75.44 & 74.19 & 74.82 & 39.88 & 88.57 & 85.29 & 86.93 & 32.61 & 84.55 & 80.00 & 82.27 & 93.78 \\
+5 & 68.42 & 82.26 & 75.34 & 38.15 & 78.57 & 88.24 & 83.40 & 34.27 & 90.91 & 85.00 & 87.95 & 93.53 \\
+\hline
+$\bar{x}$ & 73.49 & 79.35 & 76.42 & 39.53 & 86.02 & 86.47 & 86.25 & 33.11 & 89.64 & 83.50 & 86.57 & 95.28 \\
+\end{tabular}
+\end{table}
+
+\textbf{AGE-CA}
+
+\begin{table}[ht!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 67.80 & 66.13 & 66.96 & 40.77 & 87.32 & 82.35 & 84.84 & 35.17 & 90.00 & 80.00 & 85.00 & 101.21 \\
+2 & 70.18 & 75.81 & 72.99 & 40.79 & 88.57 & 85.29 & 86.93 & 35.04 & 89.09 & 75.00 & 82.05 & 100.79 \\
+3 & 66.67 & 70.97 & 68.82 & 41.29 & 85.71 & 88.24 & 86.97 & 35.26 & 90.00 & 82.50 & 86.25 & 97.34 \\
+4 & 73.68 & 69.35 & 71.52 & 41.01 & 87.14 & 76.47 & 81.81 & 35.67 & 90.00 & 75.00 & 82.50 & 99.53 \\
+5 & 77.19 & 77.42 & 77.31 & 41.33 & 91.43 & 76.47 & 83.95 & 35.19 & 94.55 & 85.00 & 89.77 & 99.53 \\
+\hline
+$\bar{x}$ & 71.10 & 71.94 & 71.52 & 41.04 & 88.04 & 81.76 & 84.90 & 35.26 & 90.73 & 79.50 & 85.11 & 99.68 \\
+\end{tabular}
+\end{table}
+
+\textbf{AM-(10, 1.0)}
+
+\begin{table}[h!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 67.80 & 82.26 & 75.03 & 39.22 & 88.73 & 88.24 & 88.48 & 34.06 & 80.91 & 87.50 & 84.20 & 95.29 \\
+2 & 64.91 & 90.32 & 77.62 & 39.49 & 84.29 & 91.18 & 87.73 & 33.95 & 89.09 & 85.00 & 87.05 & 94.90 \\
+3 & 73.68 & 85.48 & 79.58 & 40.68 & 87.14 & 94.12 & 90.63 & 33.59 & 86.36 & 87.50 & 86.93 & 94.55 \\
+4 & 71.93 & 83.87 & 77.90 & 41.31 & 85.71 & 91.18 & 88.45 & 33.35 & 88.18 & 85.00 & 86.59 & 97.37 \\
+5 & 78.95 & 79.03 & 78.99 & 41.98 & 88.57 & 88.24 & 88.40 & 33.23 & 89.09 & 87.50 & 88.30 & 98.45 \\
+\hline
+$\bar{x}$ & 71.45 & 84.19 & 77.82 & 40.54 & 86.89 & 90.59 & 88.74 & 33.64 & 86.73 & 86.50 & 86.61 & 96.11 \\
+\end{tabular}
+\end{table}
+
+
+\textbf{AM-(10, 0.1)}
+
+\begin{table}[h!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 72.88 & 77.42 & 75.15 & 38.96 & 85.92 & 91.18 & 88.55 & 31.80 & 90.00 & 87.50 & 88.75 & 92.95 \\
+2 & 73.68 & 82.26 & 77.97 & 39.75 & 82.86 & 91.18 & 87.02 & 30.95 & 89.09 & 85.00 & 87.05 & 92.34 \\
+3 & 64.91 & 85.48 & 75.20 & 39.92 & 92.86 & 91.18 & 92.02 & 31.79 & 90.00 & 85.00 & 87.50 & 91.46 \\
+4 & 71.93 & 85.48 & 78.71 & 38.71 & 82.86 & 91.18 & 87.02 & 31.46 & 88.18 & 80.00 & 84.09 & 93.34 \\
+5 & 66.67 & 85.48 & 76.08 & 37.57 & 78.57 & 91.18 & 84.87 & 32.35 & 95.45 & 82.50 & 88.98 & 91.50 \\
+\hline
+$\bar{x}$ & 70.01 & 83.23 & 76.62 & 38.98 & 84.61 & 91.18 & 87.89 & 31.67 & 90.55 & 84.00 & 87.27 & 92.32 \\
+\end{tabular}
+\end{table}
+
+\textbf{AM-(10, 0.1 mej)}
+
+
+\begin{table}[h!]
+\begin{tabular}{ccccc|cccc|cccc}
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 69.49 & 80.65 & 75.07 & 37.60 & 90.14 & 91.18 & 90.66 & 32.15 & 91.82 & 85.00 & 88.41 & 90.68 \\
+2 & 73.68 & 88.71 & 81.20 & 36.93 & 91.43 & 88.24 & 89.83 & 32.54 & 90.91 & 85.00 & 87.95 & 91.72 \\
+3 & 82.46 & 85.48 & 83.97 & 37.12 & 91.43 & 91.18 & 91.30 & 32.10 & 80.91 & 87.50 & 84.20 & 90.03 \\
+4 & 75.44 & 87.10 & 81.27 & 36.71 & 85.71 & 88.24 & 86.97 & 32.17 & 92.73 & 85.00 & 88.86 & 90.88 \\
+5 & 78.95 & 82.26 & 80.60 & 37.66 & 84.29 & 91.18 & 87.73 & 31.37 & 84.55 & 85.00 & 84.77 & 90.01 \\
+\hline
+$\bar{x}$ & 76.00 & 84.84 & 80.42 & 37.20 & 88.60 & 90.00 & 89.30 & 32.07 & 88.18 & 85.50 & 86.84 & 90.66 \\
+\end{tabular}
+\end{table}
 
 \textbf{Resumen global}
 
