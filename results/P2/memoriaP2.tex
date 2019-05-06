@@ -508,58 +508,6 @@ MUTATE2(n, m):
         mutate(pop_temp[i], gene)
 \end{verbatim}
 
-\subsection*{Algoritmo de búsqueda local de baja intensidad}
-\label{bl}
-\addcontentsline{toc}{subsection}{\nameref{bl}}
-
-Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar el vector de pesos. La idea es mutar en cada iteración una componente aleatoria y \textbf{distinta} del vector de pesos, sumándole un valor extraído de una normal de media $0$ y desviación típica $\sigma = 0.3$. Si tras esta mutación se mejora la función objetivo, nos quedamos con este nuevo vector, y si no lo desechamos. Si algún peso se sale del intervalo $[0,1]$ tras la mutación, directamente lo truncamos a $0$ ó a $1$.\\
-
-La solución inicial sobre la que iterar es la que recibimos como parámetro. A la hora de escoger qué componente vamos a mutar tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final volvemos a barajarlo para seguir generando nuevas soluciones.
-
-\begin{verbatim}
-INDEX(n):
-    for (i := 0 to n - 1)
-      index.push_back(i)
-    shuffle(index)
-\end{verbatim}
-
-\begin{algorithm}[h!]
-\begin{algorithmic}
-
-\Function{low\_intensity\_local\_search}{training, c}
-    \State iter = 0
-    \State index = INDEX(n) \Comment{n es el tamaño de c.w}
-    \State best\_objective = c.fitness
-    \While {iter $<$ 2*n}  
-        \State comp = index[iter $\%$ n]
-        \State c\_mut = c
-        \State c\_mut.w[comp] += normal(gen)
-        
-        \If {c\_mut.w[comp] $>$ $1$} \State c\_mut.w[comp] = $1$
-        \ElsIf {c\_mut.w[comp] $<$ $0$} \State c\_mut.w[comp] = $0$
-        \EndIf
-        \State c\_mut.fitness = evaluate(training, c\_mut.w)
-        \State iter++
-
-        \If {c\_mut.fitness $>$ best\_objective}
-          \State c = c\_mut
-          \State best\_objective = c\_mut.fitness
-        \EndIf
-
-        \If {iter $\%$ $n == 0$}
-          \State shuffle(index)
-        \EndIf
-     \EndWhile
-\State \Return c
-\EndFunction
-
-\end{algorithmic}
-\end{algorithm}
-
-Para escoger el valor con el que se muta cada componente utilizamos esta vez el tipo predefinido \verb|normal_distribution<double>|. Para determinar si una mutación mejora, utilizamos como métrica el valor de la función objetivo, tomando la tasa de clasificación sobre el propio conjunto de entrenamiento (\textit{leave-one-out}).\\
-
-Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un número fijo (pequeño) de iteraciones, proporcionales al número de características del conjunto de datos que empleamos. Notamos que hemos adaptado el código para funcionar recibiendo un dato del tipo \verb|Chromosome|.
-
 \subsection*{Algoritmos genéticos generacionales}
 \label{agg}
 \addcontentsline{toc}{subsection}{\nameref{agg}}
@@ -619,8 +567,6 @@ En este caso, cambiamos el esquema de reemplazamiento con respecto a los algorit
 
 Los dos cromosomas que componen la población intermedia compiten para entrar en la nueva población con los dos peores de la población anterior, quedándonos al final con los dos mejores de entre los cuatro.
 
-\newpage
-
 \begin{algorithm}[h]
 \begin{algorithmic}
 
@@ -663,6 +609,58 @@ Los dos cromosomas que componen la población intermedia compiten para entrar en
   
 \end{algorithmic}
 \end{algorithm}
+
+\subsection*{Algoritmo de búsqueda local de baja intensidad}
+\label{bl}
+\addcontentsline{toc}{subsection}{\nameref{bl}}
+
+Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar el vector de pesos. La idea es mutar en cada iteración una componente aleatoria y \textbf{distinta} del vector de pesos, sumándole un valor extraído de una normal de media $0$ y desviación típica $\sigma = 0.3$. Si tras esta mutación se mejora la función objetivo, nos quedamos con este nuevo vector, y si no lo desechamos. Si algún peso se sale del intervalo $[0,1]$ tras la mutación, directamente lo truncamos a $0$ ó a $1$.\\
+
+La solución inicial sobre la que iterar es la que recibimos como parámetro. A la hora de escoger qué componente vamos a mutar tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final volvemos a barajarlo para seguir generando nuevas soluciones.
+
+\begin{verbatim}
+INDEX(n):
+    for (i := 0 to n - 1)
+      index.push_back(i)
+    shuffle(index)
+\end{verbatim}
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{low\_intensity\_local\_search}{training, c}
+    \State iter = 0
+    \State index = INDEX(n) \Comment{n es el tamaño de c.w}
+    \State best\_objective = c.fitness
+    \While {iter $<$ 2*n}  
+        \State comp = index[iter $\%$ n]
+        \State c\_mut = c
+        \State c\_mut.w[comp] += normal(gen)
+        
+        \If {c\_mut.w[comp] $>$ $1$} \State c\_mut.w[comp] = $1$
+        \ElsIf {c\_mut.w[comp] $<$ $0$} \State c\_mut.w[comp] = $0$
+        \EndIf
+        \State c\_mut.fitness = evaluate(training, c\_mut.w)
+        \State iter++
+
+        \If {c\_mut.fitness $>$ best\_objective}
+          \State c = c\_mut
+          \State best\_objective = c\_mut.fitness
+        \EndIf
+
+        \If {iter $\%$ $n == 0$}
+          \State shuffle(index)
+        \EndIf
+     \EndWhile
+\State \Return c
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+Para escoger el valor con el que se muta cada componente utilizamos esta vez el tipo predefinido \verb|normal_distribution<double>|. Para determinar si una mutación mejora, utilizamos como métrica el valor de la función objetivo, tomando la tasa de clasificación sobre el propio conjunto de entrenamiento (\textit{leave-one-out}).\\
+
+Al tratarse de una búsqueda local de \textbf{baja intensidad}, realizamos un número fijo (pequeño) de iteraciones, proporcionales al número de características del conjunto de datos que empleamos. Notamos que hemos adaptado el código para funcionar recibiendo un dato del tipo \verb|Chromosome|.
 
 \subsection*{Algoritmos meméticos}
 \label{am}
@@ -789,8 +787,8 @@ El algoritmo RELIEF se detalla ya en la página siguiente.
         \Else
             \State w[j] = w[j] / max
         \EndIf
-      
-\hspace{-.7em} \Return w
+      \EndFor
+\State \Return w
 \EndFunction
 
 \end{algorithmic}
@@ -842,8 +840,9 @@ Mostramos el pseudocódigo en la siguiente página.
       \State shuffle(index.begin(), index.end(), gen)
       \State improvement = false
     \EndIf
+  \EndWhile
       
-\hspace{-.7em} \Return w
+\State \Return w
 \EndFunction
 
 \end{algorithmic}
@@ -1091,7 +1090,51 @@ Por último, cabe destacar que en cuanto a la tasa de clasificación, el algorit
 \label{analisis}
 \addcontentsline{toc}{subsection}{\nameref{analisis}}
 
-cambiando parámetros, hay más libertad, etc
+En primer lugar, atendiendo a los algoritmos genéticos generacionales, observamos que el AGG-CA es consistentemente peor que el AGG-BLX, y que la diferencia es considerable en algunos casos. Es posible que esto sea así porque el cruce BLX introduce capacidad de exploración de las soluciones y porque además el cruce aritmético es determinista. El factor aleatorio del cruce BLX parece decisivo en este caso, pues establece un equilibrio entre explotación y exploración (controlado por el valor de $\alpha_{blx}$) que consigue una convergencia más rápida a soluciones mejores.\\
+
+En cuanto a la comparación con la búsqueda local, vemos que el AGG-CA es claramente peor, y que el AGG-BLX es más o menos similar. Dependiendo de la semilla concreta con la que lo ejecutemos puede ser ligeramente mejor o peor en cuanto a la tasa agregada, si bien es cierto que el AGG-BLX parece conseguir tasas de clasificación más altas. En relación al tiempo de ejecución, los algoritmos genéticos tardan entre 3 y 5 veces más que la búsqueda local, por lo que no parece que la inversión extra de tiempo proporcione resultados mucho mejores.\\
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/AGG.png}
+	\caption{Comparación en una ejecución concreta de los AGG en \textit{ionosphere}}
+\end{figure}
+
+En segundo lugar, en los algoritmos genéticos estacionarios se vuelve a producir el efecto comentado anteriormente para los dos tipos de cruce: el cruce aritmético sale perdiendo en todas las ocasiones. Sin embargo, la tasa agregada conseguida por el AGE-CA supera ampliamente a la conseguida por el AGG-CA, mientras que la tasa agregada del AGE-BLX se queda por debajo de la del AGG-BLX en la mayoría de los casos. La mejora observada se puede explicar por la alta presión selectiva que introduce el esquema de reemplazo estacionario, en el que los hijos compiten con el resto de la población para introducirse en ella.\\
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/AGE.png}
+	\caption{Comparación en una ejecución concreta de los AGE en \textit{ionosphere}}
+\end{figure}
+
+En cualquier caso, en la implementación de los algoritmos estacionarios tenemos una probabilidad de mutación relativamente baja (al ser la población intermedia muy reducida), por lo que la diversidad que introducimos en la población es limitada. Esto hace que, tras la convergencia acelerada por el elitismo en el reemplazo, no se consiga mejorar mucho las soluciones y se observen largos periodos de estancamiento, es decir, convergen prematuramente a óptimos locales.\\
+
+En este caso el tiempo de ejecución es similar al de los algoritmos genéticos generacionales, y de nuevo no parece que el tiempo invertido merezca la pena, pues la tasa agregada es menor que la obtenida por la búsqueda local. \\
+
+En tercer lugar, \textbf{los algoritmos meméticos ofrecen una mejora notable de la tasa agregada con respecto al resto de algoritmos considerados} (en esta práctica y en la anterior). Al hibridar un algoritmo genético con alta capacidad de exploración como es el AGG-BLX con un algoritmo que explota mucho las soluciones (búsqueda local) conseguimos una rápida convergencia inicial, con capacidad de mejorar las soluciones y escapar de óptimos locales.\\
+
+Al emplear una búsqueda de baja intensidad y una población reducida conseguimos que el tiempo de ejecución sea incluso inferior al de los algoritmos genéticos.\\
+
+Un detalle que podemos observar es que también hay periodos de estancamiento de las soluciones, motivados probablemente por iteraciones de la búsqueda local que no conducen a mejora, por lo que podríamos pensar en establecer un criterio de parada alternativo que contemple estas situaciones.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/am.png}
+	\caption{Comparación en una ejecución concreta de los AM en \textit{ionosphere}}
+\end{figure}
+
+En la comparación de los tres algoritmos meméticos no parece haber una tendencia consistente, pues las diferencias entre las tasas agregadas obtenidas es pequeña y puede depender de los procesos aleatorios involucrados.\\
+
+Vemos finalmente una gráfica comparativa de la tasa agregada (sobre el conjunto de entrenamiento) obtenida por todos los algoritmos en función del número de iteraciones realizadas, donde se aprecian las relaciones que hemos comentado anteriormente.\\
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/todos.png}
+	\caption{Comparación en una ejecución concreta de todos los algoritmos en \textit{ionosphere}}
+\end{figure}
+
+Por último, no debemos pensar que el hecho de que los algoritmos genéticos no mejoren mucho los resultados obtenidos por la búsqueda local quiere decir que podamos descartarlos como metaheurísticas adecuadas. Hay muchos factores a tener en cuenta, como son el \textit{sesgo} que puedan tener los conjuntos de datos que utilizamos en favor de un algoritmo u otro, el valor de los distintos parámetros que controlan la ejecución de los algoritmos, la semilla utilizada, etc. 
 
 \end{document}
 
