@@ -113,7 +113,7 @@
 \renewcommand{\lstlistingname}{Código fuente}% Listing -> Algorithm
 
 \title{Metaheurísticas\\ \Large Aprendizaje de Pesos en Características \\ \large Práctica 2: Búsqueda basada en poblaciones}
-\author{Antonio Coín Castro \\ 77191012E \\ antoniocoin@correo.ugr.es \\ Grupo 1 (M 17:30-19:30)}
+\author{Antonio Coín Castro \\ XXXXXXXXXXZ \\ XXXXXXXXXX@correo.ugr.es \\ Grupo 1 (M 17:30-19:30)}
 \date{\today}
 
 \begin{document}
@@ -130,9 +130,9 @@
 
 \section{Descripción del problema}
 
-En todo el desarrollo de las prácticas consideraremos el marco general de un problema de clasificación. Fijado $n \in \mathbb{N}$, un \textit{clasificador} es cualquier función $c: \mathbb{R}^n \to C$, donde $C$ es un conjunto (finito) de clases prefijadas. Consideramos además un conjunto de \textit{entrenamiento} $T \subseteq \mathbb{R}^n$ de elementos ya clasificados: para cada $t \in T$, denotamos $\Gamma(t) \in C$ a su clase, que es conocida.\\
+En todo el desarrollo de las prácticas consideraremos el marco general de un problema de clasificación. Fijado $n \in \mathbb{N}$, un \textit{clasificador} es cualquier función $c: \mathbb{R}^n \to C$, donde $C$ es un conjunto (finito) de clases prefijadas. Consideramos además un \textit{conjunto de entrenamiento} $T \subseteq \mathbb{R}^n$ de elementos ya clasificados: para cada $t \in T$, denotamos $\Gamma(t) \in C$ a su clase, que es conocida.\\
 
-El problema de clasificación consiste en, dado un conjunto de \textit{prueba} $T'\subseteq \mathbb{R}^n$ no observado previamente, encontrar un clasificador $c$ que maximice el número de clases correctamente clasificadas en $T'$, tras haber sido entrenado sobre los elementos de $T$.\\
+El problema de clasificación consiste en, dado un \textit{conjunto de prueba} $T'\subseteq \mathbb{R}^n$ no observado previamente, encontrar un clasificador $c$ que maximice el número de clases correctamente clasificadas en $T'$, tras haber sido entrenado sobre los elementos de $T$.\\
 
 Uno de los clasificadores más conocidos y más sencillos es el clasificador $k-$NN, que asigna a cada elemento la clase que más se repite entre sus $k$ vecinos más cercanos. En el caso concreto de esta práctica trabajaremos con el clasificador $1-$NN \textbf{con pesos}: a cada elemento le asignamos la clase de su vecino más cercano, pero ponderamos la distancia en función de un vector de pesos $w \in [0,1]^n$.\\
 
@@ -148,8 +148,8 @@ La idea tras estos pesos es que midan la importancia de cada una de las caracter
 Para medir la bondad de un clasificador con pesos utilizamos las siguientes métricas:
 
 \begin{itemize}
-	\item La \textbf{precisión} (T). Estudiámos cuántos ejemplos del conjunto de prueba se clasifican correctamente, entrenando previamente el clasificador (que utiliza la distancia $d_w$) con el conjunto de entrenamiento.
-	\item La \textbf{simplicidad} (R). Un clasificador será más simple si tiene en cuenta un menor número de características. Diremos que una característica $i \in \{1, \dots, n\}$ no se considera en el cálculo de la distancia si el peso asociado $w_i$ es menor que $0.2$. 
+	\item La \textbf{precisión} (T). Estudiamos cuántos ejemplos del conjunto de prueba se clasifican correctamente, entrenando previamente el clasificador (que utiliza la distancia $d_w$) con el conjunto de entrenamiento.
+	\item La \textbf{simplicidad} (R). Un clasificador será más simple si tiene en cuenta un menor número de características. Diremos que una característica $i \in \{1, \dots, n\}$ no se considera en el cálculo de la distancia si su peso asociado $w_i$ es menor que $0.2$. 
 \end{itemize}
 
 Así, el problema consiste en encontrar un vector de pesos $w \in [0,1]^n$ que maximice la precisión y la simplicidad, es decir, que maximice lo que llamaremos la \textit{función objetivo}:
@@ -198,7 +198,7 @@ Para el desarrollo de los diferentes algoritmos genéticos consideramos una estr
 	}
 \end{verbatim}
 
-El valor por defecto del \textit{fitness} de un cromosoma es $-1$. Esto será útil para saber que un cromosoma aún no está evaluado.\\
+El valor por defecto del \textit{fitness} de un cromosoma es $-1$. Esto será útil para saber que un cromosoma no está correctamente evaluado.\\
 
 Para representar una población de soluciones (un conjunto de cromosomas) utilizamos el tipo de dato \verb|multiset|: un contenedor asociativo y ordenado que admite repetidos. Esto último es importante, pues en un momento dado podemos concebir una población con varios cromosomas iguales. El orden que definimos entre cromosomas se puede adivinar fácilmente: si $c_1$ y $c_2$ son cromosomas, diremos que $c_1 < c_2$ si $c_1.\text{fitness} < c_2.\text{fitness}$.
 
@@ -343,7 +343,7 @@ El operador de \textbf{cruce blx} recibe dos cromosomas y devuelve dos descendie
 \end{algorithmic}
 \end{algorithm}
 
-Por su parte, el operador de \textbf{cruce aritmético} recibe dos cromosomas y devuelve un único cromosoma, cuyos pesos resultan de realizar la media aritmética de los pesos de los padres, componente a componente.\\
+Por su parte, el operador de \textbf{cruce aritmético} recibe dos cromosomas y devuelve un único cromosoma, cuyos pesos resultan de realizar la media aritmética de los pesos de los padres componente a componente.\\
 
 \begin{algorithm}[ht!]
 \begin{algorithmic}
@@ -514,7 +514,7 @@ MUTATE2(n, m):
 
 Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar el vector de pesos. La idea es mutar en cada iteración una componente aleatoria y \textbf{distinta} del vector de pesos, sumándole un valor extraído de una normal de media $0$ y desviación típica $\sigma = 0.3$. Si tras esta mutación se mejora la función objetivo, nos quedamos con este nuevo vector, y si no lo desechamos. Si algún peso se sale del intervalo $[0,1]$ tras la mutación, directamente lo truncamos a $0$ ó a $1$.\\
 
-La solución inicial sobre la que iterar es la que recibimos como parámetro. A la hora de escoger qué componente vamos a mutar, tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final, volvemos a barajarlo para seguir generando nuevas soluciones.
+La solución inicial sobre la que iterar es la que recibimos como parámetro. A la hora de escoger qué componente vamos a mutar tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final volvemos a barajarlo para seguir generando nuevas soluciones.
 
 \begin{verbatim}
 INDEX(n):
@@ -726,7 +726,130 @@ Al compilar se genera un único ejecutable en la carpeta \verb|BIN| de nombre \v
 Todas las ejecuciones se han realizado en un máquina con sistema operativo \verb|Linux| y procesador Intel Core i5-7200U @ 2.5GHz.
 
 \newpage
+\section{Algoritmos de comparación}
 
+Para comparar las metaheurísticas implementadas en esta práctica usaremos los algoritmos implementados en la práctica 1, a saber: el clasificador $1-$NN sin pesos, el algoritmo RELIEF y la búsqueda local.
+
+\subsection*{{\color{red} Clasificador $\mathbf{1}$-NN sin pesos}}
+
+Ya se ha descrito en la sección de operadores comunes (podemos considerar que es un clasificador con pesos, donde todos los pesos valen $1$).
+
+\subsection*{{\color{red} Algoritmo \textit{greedy} RELIEF}}
+
+Este es un algoritmo voraz muy sencillo, que servirá como caso base para comparar las diferentes metaheurísticas desarrolladas. Se trata de buscar, para cada ejemplo, su amigo (misma clase) y su enemigo (distinta clase) más cercano. Después, componente a componente se suma al vector de pesos la distancia a su enemigo, y se resta la distancia a su amigo.\\
+
+En este proceso es posible que los pesos se salgan del intervalo $[0,1]$, por lo que al finalizar es necesario normalizarlos. Además, no debemos olvidar que el algoritmo comienza con el vector de pesos relleno de $0$s. Disponemos para ello de una función \verb|init_vector| que se encarga de darle un valor inicial de $0$ a todas las componentes del vector de pesos.\\
+
+Separamos la función que se encarga de buscar los amigos y enemigos más cercanos, teniendo en cuenta que el amigo más cercano no puede ser el propio ejemplo.
+
+\begin{algorithm}[h]
+\begin{algorithmic}
+
+\Function{nearest\_example}{training, e, self}
+     \State dmin\_friend = $\infty$
+     \State dmin\_enemy = $\infty$
+     \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de ejemplos de entrenamiento}
+         \If {i $\neq$ self}
+            \State dist = distance\_sq(e, training[i])
+            \If {training[i].category $!=$ e.category \textit{and} dist < dmin\_enemy}
+                  \State n\_enemy = i
+                  \State dmin\_enemy = dist
+            \ElsIf {training[i].category == e.category \textit{and} dist < dmin\_friend)}
+                  \State n\_friend = i
+                  \State dmin\_friend = dist
+            \EndIf
+          \EndIf
+       \EndFor
+   \State \Return n\_enemy, n\_friend
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+El algoritmo RELIEF se detalla ya en la página siguiente.
+\newpage
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{relief}{training}
+     \State w = init\_vector()
+     \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de ejemplos de entrenamiento}
+         \State n\_enemy, n\_friend = nearest\_example(training, training[i], i)
+         \For{j $:=$ $0$ to $m - 1$}  \Comment {m es el tamaño del vector de pesos}
+            \State w[j] = w[j] + $|$training[i].traits[j] - training[n\_enemy].traits[j]$|$
+            \State \hspace{2.5em} $-$ $|$training[i].traits[j] - training[n\_friend].traits[j]$|$
+          
+         \EndFor
+      \EndFor
+      \State max = max(w)
+      \For {j $:=$ $0$ to $m-1$}  \Comment{normalizamos los pesos}
+        \If {w[j] $<$ 0}
+            \State w[j] = 0
+        \Else
+            \State w[j] = w[j] / max
+        \EndIf
+      
+\hspace{-.7em} \Return w
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsection*{{\color{red} Búsqueda local}}
+
+Es un algoritmo prácticamente idéntico a la búsqueda local de baja intensidad que se ha explicado anteriormente. La diferencia es que inicializamos el vector inicial partiendo de una distribución uniforme $\mathcal U(0,1)$, y también que cuando generamos un vecino que mejora, reiniciamos el vector de índices. \\
+
+Detenemos la búsqueda cuando llegamos al máximo de iteraciones, o cuando generamos un número de vecinos (dependiente del número de características) sin mejorar la función objetivo.\\
+
+Mostramos el pseudocódigo en la siguiente página.
+
+\newpage
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{local\_search}{training}
+
+\State w, index = initialize()
+
+\State best\_objective = evaluate(training, w)
+
+  \While {iter $<$ MAX\_ITER \textit{and} neighbour $<$ n * MAX\_NEIGHBOUR\_PER\_TRAIT}
+    \State comp = index[iter $\%$ n]
+    \State w\_mut = w
+    \State w\_mut[comp] += normal(gen)
+    
+    \If {w\_mut[comp] $>$ $1$} \State w\_mut[comp] = $1$
+    \ElsIf {w\_mut[comp] $<$ $0$} \State w\_mut[comp] = $0$
+    \EndIf
+    \State current\_objective = evaluate(training, w)
+    \State iter++
+
+    \If {current\_objective $>$ best\_objective}
+      \State mut++
+      \State neighbour = $0$
+      \State w = w\_mut
+      \State best\_objective = current\_objective
+      \State improvement = true
+
+    \Else 
+      \State neighbour++
+    \EndIf
+
+    \If {iter $\%$ $n == 0$ \textit{or} improvement}
+      \State shuffle(index.begin(), index.end(), gen)
+      \State improvement = false
+    \EndIf
+      
+\hspace{-.7em} \Return w
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
 \section{Resultados}
 
 \subsection*{Descripción de los casos del problema}
@@ -753,8 +876,9 @@ Para cada conjunto de datos se muestra una tabla con cada una de las 5 ejecucion
 
 {\color{red}\textbf{Clasificador $\boldsymbol{1-}$NN sin pesos}}
 
-\begin{table}[h]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 69.49 & 0.00 & 34.75 & 0.001 & 88.73 & 0.00 & 44.37 & 0.001 & 93.64 & 0.00 & 46.82 & 0.002\\
@@ -772,8 +896,9 @@ $\bar{x}$  & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82
 
 {\color{red}\textbf{Algoritmo RELIEF}}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 69.49 & 37.10 & 53.29 & 0.004 & 91.55 & 2.94 & 47.25 & 0.003 & 97.27 & 7.50 & 52.39 & 0.01\\
@@ -788,8 +913,9 @@ $\bar{x}$ & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.003 & 94.73
 
 {\color{red}\textbf{Algoritmo de búsqueda local}}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 77.97 & 82.26 & 80.11 & 19.395 & 84.51 & 82.35 & 83.43 & 3.285 & 88.18 & 77.50 & 82.84 & 21.465\\
@@ -804,8 +930,9 @@ $\bar{x}$  & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89
 
 \textbf{AGG-BLX}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 69.49 & 75.81 & 72.65 & 39.37  & 91.55 & 82.35 & 86.95 & 31.96  & 82.73 & 85.00 & 83.86 & 95.12 \\
@@ -820,8 +947,9 @@ $\bar{x}$  & 75.30 & 78.71 & 77.01 & 41.61 & 90.02 & 84.71 & 87.37 & 32.32  & 87
 
 \textbf{AGG-CA}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 66.10 & 53.23 & 59.66 & 44.25 & 90.14 & 70.59 & 80.36 & 34.64 & 90.00 & 72.50 & 81.25 & 104.17 \\
@@ -833,12 +961,13 @@ $\bar{x}$  & 75.30 & 78.71 & 77.01 & 41.61 & 90.02 & 84.71 & 87.37 & 32.32  & 87
 $\bar{x}$ & 72.87 & 60.00 & 66.43 & 42.77 & 87.74 & 71.76 & 79.75 & 35.18 & 92.55 & 67.50 & 80.02 & 104.69 \\
 \end{tabular}
 \end{table}
-
+\newpage
 
 \textbf{AGE-BLX}
 
 \begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 77.97 & 79.03 & 78.50 & 37.96 & 91.55 & 88.24 & 89.89 & 32.51 & 90.00 & 87.50 & 88.75 & 98.55 \\
@@ -855,6 +984,7 @@ $\bar{x}$ & 73.49 & 79.35 & 76.42 & 39.53 & 86.02 & 86.47 & 86.25 & 33.11 & 89.6
 
 \begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 67.80 & 66.13 & 66.96 & 40.77 & 87.32 & 82.35 & 84.84 & 35.17 & 90.00 & 80.00 & 85.00 & 101.21 \\
@@ -869,8 +999,9 @@ $\bar{x}$ & 71.10 & 71.94 & 71.52 & 41.04 & 88.04 & 81.76 & 84.90 & 35.26 & 90.7
 
 \textbf{AM-(10, 1.0)}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 67.80 & 82.26 & 75.03 & 39.22 & 88.73 & 88.24 & 88.48 & 34.06 & 80.91 & 87.50 & 84.20 & 95.29 \\
@@ -886,8 +1017,9 @@ $\bar{x}$ & 71.45 & 84.19 & 77.82 & 40.54 & 86.89 & 90.59 & 88.74 & 33.64 & 86.7
 
 \textbf{AM-(10, 0.1)}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 72.88 & 77.42 & 75.15 & 38.96 & 85.92 & 91.18 & 88.55 & 31.80 & 90.00 & 87.50 & 88.75 & 92.95 \\
@@ -899,12 +1031,14 @@ $\bar{x}$ & 71.45 & 84.19 & 77.82 & 40.54 & 86.89 & 90.59 & 88.74 & 33.64 & 86.7
 $\bar{x}$ & 70.01 & 83.23 & 76.62 & 38.98 & 84.61 & 91.18 & 87.89 & 31.67 & 90.55 & 84.00 & 87.27 & 92.32 \\
 \end{tabular}
 \end{table}
+\newpage
 
 \textbf{AM-(10, 0.1 mej)}
 
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 69.49 & 80.65 & 75.07 & 37.60 & 90.14 & 91.18 & 90.66 & 32.15 & 91.82 & 85.00 & 88.41 & 90.68 \\
@@ -917,15 +1051,25 @@ $\bar{x}$ & 76.00 & 84.84 & 80.42 & 37.20 & 88.60 & 90.00 & 89.30 & 32.07 & 88.1
 \end{tabular}
 \end{table}
 
-\textbf{Resumen global}
+\textbf{Resumen global}\\
+
+Se recalca en \textbf{negrita} el mejor agregado para cada conjunto de datos, y en {\color{blue} azul} el segundo mejor. Hemos abreviado los algoritmos meméticos AM-(10, 1.0), AM-(10, 0.1) y AM-(10, 0.1 mej) como AM1, AM2 y AM3, respectivamente. 
 
 \begin{table}[h]
 \begin{tabular}{ccccc|cccc|cccc}
+\centering
  & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
 \textbf{Alg} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1-NN & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82 & 0.00 & 46.91 & 0.002\\
 RELIEF & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.004 & 94.73 & 6.50 & 50.61 & 0.01\\
 BL & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89.45 & 82.50 & 85.98 & 20.017\\
+AGG-BLX & 75.30 & 78.71 & 77.01 & 41.61 & 90.02 & 84.71 & 87.37 & 32.32  & 87.27 & 84.00 & 85.64 & 96.06 \\
+AGG-CA & 72.87 & 60.00 & 66.43 & 42.77 & 87.74 & 71.76 & 79.75 & 35.18 & 92.55 & 67.50 & 80.02 & 104.69 \\
+AGE-BLX & 73.49 & 79.35 & 76.42 & 39.53 & 86.02 & 86.47 & 86.25 & 33.11 & 89.64 & 83.50 & 86.57 & 95.28 \\
+AGE-CA & 71.10 & 71.94 & 71.52 & 41.04 & 88.04 & 81.76 & 84.90 & 35.26 & 90.73 & 79.50 & 85.11 & 99.68 \\
+AM1 & 71.45 & 84.19 & {\color{blue}77.82} & 40.54 & 86.89 & 90.59 & {\color{blue}88.74} & 33.64 & 86.73 & 86.50 & 86.61 & 96.11 \\
+AM2 & 70.01 & 83.23 & 76.62 & 38.98 & 84.61 & 91.18 & 87.89 & 31.67 & 90.55 & 84.00 & \textbf{87.27} & 92.32 \\
+AM3 & 76.00 & 84.84 & \textbf{80.42} & 37.20 & 88.60 & 90.00 & \textbf{89.30} & 32.07 & 88.18 & 85.50 & {\color{blue}86.84} & 90.66 \\
 \end{tabular}
 \end{table}
 
