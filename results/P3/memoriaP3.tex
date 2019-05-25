@@ -1,0 +1,615 @@
+\documentclass[12pt]{article}
+
+%\usepackage{palatino}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[sfdefault,scaled=.85, lining]{FiraSans}
+\usepackage{newtxsf}
+\usepackage[spanish]{babel}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{wasysym}
+\usepackage[x11names, rgb, html]{xcolor}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{adjustbox}
+\usepackage{geometry}
+\usepackage{upgreek}
+\usepackage[scaled=.85, lining]{FiraMono}
+\usepackage[noend]{algpseudocode}
+\usepackage{algorithm}
+\usepackage[italic]{mathastext}
+\usepackage{hyperref}
+\usepackage{listingsutf8}
+
+\hypersetup{
+  % hidelinks = true,   % Oculta todos los enlaces.
+  colorlinks = true,   % Muestra todos los enlaces, sin bordes alrededor.
+  linkcolor={black},     % Color de enlaces genéricos
+  citecolor={blue!70!black},   % Color de enlaces de referencias
+  urlcolor={blue!70!black}     % Color de enlaces de URL
+}
+
+\geometry{left=3cm,right=3cm,top=3cm,bottom=3cm,headheight=1cm,headsep=0.5cm}
+
+\setlength{\parindent}{0pt}
+
+%%% COLORES
+
+\definecolor{50}{HTML}{FFEBEE}
+\definecolor{100}{HTML}{FFCDD2}
+\definecolor{200}{HTML}{EF9A9A}
+\definecolor{300}{HTML}{E57373}
+\definecolor{400}{HTML}{EF5350}
+\definecolor{500}{HTML}{F44336}
+\definecolor{600}{HTML}{E53935}
+\definecolor{700}{HTML}{D32F2F}
+\definecolor{800}{HTML}{C62828}
+\definecolor{900}{HTML}{B71C1C}
+
+%% Colores de Solarized
+
+\definecolor{sbase03}{HTML}{002B36}
+\definecolor{sbase02}{HTML}{073642}
+\definecolor{sbase01}{HTML}{586E75}
+\definecolor{sbase00}{HTML}{657B83}
+\definecolor{sbase0}{HTML}{839496}
+\definecolor{sbase1}{HTML}{93A1A1}
+\definecolor{sbase2}{HTML}{EEE8D5}
+\definecolor{sbase3}{HTML}{FDF6E3}
+\definecolor{syellow}{HTML}{B58900}
+\definecolor{sorange}{HTML}{CB4B16}
+\definecolor{sred}{HTML}{DC322F}
+\definecolor{smagenta}{HTML}{D33682}
+\definecolor{sviolet}{HTML}{6C71C4}
+\definecolor{sblue}{HTML}{268BD2}
+\definecolor{scyan}{HTML}{2AA198}
+\definecolor{sgreen}{HTML}{859900}
+
+%% Colores del documento
+
+\definecolor{text}{RGB}{78,78,78}
+\definecolor{accent}{RGB}{129, 26, 24}
+
+%%% LISTINGS
+
+%% Tildes
+
+\lstset{
+  inputencoding=utf8/latin1
+}
+
+\lstset{
+  % How/what to match
+   sensitive=false,
+  % Border (above and below)
+  frame=leftline,
+  rulecolor=\color{300},
+  framerule=2pt,
+  % Line number
+  numbers=left,
+  % Extra margin on line (align with paragraph)
+  xleftmargin=\parindent,
+  % Put extra space under caption
+  belowcaptionskip=1\baselineskip,
+  % Colors
+  % backgroundcolor=\color{sbase3},
+  basicstyle=\footnotesize\ttfamily\color{sbase00},
+  keywordstyle=\color{700},
+  commentstyle=\color{300},
+  stringstyle=\color{500},
+  numberstyle=\color{500},
+  %identifierstyle=\color{500},
+  % Break long lines into multiple lines?
+  breaklines=true,
+  % Show a character for spaces?
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=0.7em,
+}
+
+\renewcommand{\lstlistingname}{Código fuente}% Listing -> Algorithm
+
+\title{Metaheurísticas\\ \Large Aprendizaje de Pesos en Características \\ \large Práctica 3: Enfriamiento simulado, búsqueda local reiterada y evolución diferencial}
+\author{Antonio Coín Castro \\ XXXXXXXXXXZ \\ XXXXXXXXXX@correo.ugr.es \\ Grupo 1 (M 17:30-19:30)}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\newpage
+
+\newgeometry{top=3in, left=1.2in, right=1.2in}
+\textit{Con el fin de mantener en un único documento toda la información relevante para esta práctica se han incluido en esta memoria las explicaciones y descripciones de los algoritmos que ya se comentaron en la memoria de las prácticas anteriores, así como el análisis de resultados que ya se realizó. Para separar esta información repetida se marcan en {\color{red}rojo} las secciones que no aportan nada nuevo a esta práctica.}
+\restoregeometry
+
+\newpage
+
+\section{Descripción del problema}
+
+En todo el desarrollo de las prácticas consideraremos el marco general de un problema de clasificación. Fijado $n \in \mathbb{N}$, un \textit{clasificador} es cualquier función $c: \mathbb{R}^n \to C$, donde $C$ es un conjunto (finito) de clases prefijadas. Consideramos además un \textit{conjunto de entrenamiento} $T \subseteq \mathbb{R}^n$ de elementos ya clasificados: para cada $t \in T$, denotamos $\Gamma(t) \in C$ a su clase, que es conocida.\\
+
+El problema de clasificación consiste en, dado un \textit{conjunto de prueba} $T'\subseteq \mathbb{R}^n$ no observado previamente, encontrar un clasificador $c$ que maximice el número de clases correctamente clasificadas en $T'$, tras haber sido entrenado sobre los elementos de $T$.\\
+
+Uno de los clasificadores más conocidos y más sencillos es el clasificador $k-$NN, que asigna a cada elemento la clase que más se repite entre sus $k$ vecinos más cercanos. En el caso concreto de esta práctica trabajaremos con el clasificador $1-$NN \textbf{con pesos}: a cada elemento le asignamos la clase de su vecino más cercano, pero ponderamos la distancia en función de un vector de pesos $w \in [0,1]^n$.\\
+
+Para el cálculo de la distancia entre dos elementos de $\mathbb{R}^n$ utilizaremos la \textit{distancia euclídea} ponderada por el ya mencionado vector de pesos:
+
+\[
+    d_w(t, s) = \sqrt{\sum_{i=1}^n w_i (s_i - t_i)^2}, \quad t, s \in \mathbb{R}^n.
+\]
+\vspace{.5em}
+
+La idea tras estos pesos es que midan la importancia de cada una de las características que representan las coordenadas de los elementos $n-$dimensionales considerados, asignando más peso en el cálculo de la distancia a aquellas que sean más importantes. El problema de \textbf{aprendizaje de pesos en características} persigue justamente `'aprender'' cuál debe ser el valor de cada peso en una instancia concreta del problema.\\
+
+Para medir la bondad de un clasificador con pesos utilizamos las siguientes métricas:
+
+\begin{itemize}
+	\item La \textbf{precisión} (T). Estudiamos cuántos ejemplos del conjunto de prueba se clasifican correctamente, entrenando previamente el clasificador (que utiliza la distancia $d_w$) con el conjunto de entrenamiento.
+	\item La \textbf{simplicidad} (R). Un clasificador será más simple si tiene en cuenta un menor número de características. Diremos que una característica $i \in \{1, \dots, n\}$ no se considera en el cálculo de la distancia si su peso asociado $w_i$ es menor que $0.2$.
+\end{itemize}
+
+Así, el problema consiste en encontrar un vector de pesos $w \in [0,1]^n$ que maximice la precisión y la simplicidad, es decir, que maximice lo que llamaremos la \textit{función objetivo}:
+
+\[
+    F(w) = \alpha T(w) + (1 - \alpha) R(w).
+\]
+
+\newpage
+
+\section{Descripción de la aplicación de los algoritmos}
+
+En esta sección se describen los elementos comunes a todos los algoritmos desarrollados, así como los esquemas de representación de datos de entrada y soluciones. Todo el código se ha desarrollado en \verb|C++11|.
+
+
+\subsection*{{\color{red}Esquemas de representación P1}}
+
+En primer lugar, los datos de entrada se encuentran en la carpeta \verb|DATA|. Consisten en tres conjuntos de datos \textbf{ya normalizados} en formato \verb|csv|, donde cada fila representa un ejemplo con los valores de sus características separados por '\verb|;|' y el último elemento de la fila es su clase.\\
+
+Para representar los datos en el programa se emplea una estructura \verb|Example| que recoge toda la información necesaria: un \verb|vector<double>| con los valores de cada una de las \verb|n| características del ejemplo concreto, así como un \verb|string| que representa su clase o categoría.
+
+\begin{verbatim}
+struct Example {
+    vector<double> traits;
+    string category;
+    int n;
+}
+\end{verbatim}
+
+Cada conjunto de datos se representa entonces por un \verb|vector<Example>|, y se emplea la función \verb|read_csv| para rellenar el vector, que va leyendo los archivos línea a línea.\\
+
+Además, como será necesario hacer particiones de cada conjunto de datos para implementar la técnica de \textit{$K$-fold cross validation}, se proporciona la función \verb|make_partitions| que se encarga de repartir los elementos entre los $K$ conjuntos considerados, respetando la proporción original de clases. La forma de hacer esto es simplemente ir poniendo cada clase de forma cíclica en las particiones, primando el reparto equitativo de clases al reparto equitativo de elementos.\\
+
+Por su parte, la solución es un \verb|vector<double>| del mismo tamaño que el número de categorías consideradas en cada caso. La componente $i-$ésima del vector representa el peso otorgado a la característica $i-$ésima de cada ejemplo del problema.
+
+\subsection*{Esquemas de representación P3}
+\label{representacion}
+\addcontentsline{toc}{subsection}{\nameref{representacion}}
+
+\subsection*{{\color{red}Operadores comunes P1}}
+
+Todos los algoritmos hacen uso del cálculo de la distancia. Como dijimos, para este cálculo se emplea la distancia euclídea, eventualmente ponderada mediante un vector de pesos. En el caso de que la distancia deseada sea la estándar, se asume que los pesos valen siempre $1$ (en la implementación realmente hay dos funciones separadas, una con pesos y otra sin pesos).
+
+\begin{algorithm}[ht!]
+\begin{algorithmic}
+
+\Function{distance\_sq\_weights}{e1, e2, w}
+     \State distance = $0$
+     \For{i $:=$ $0$ to $n-1$}  \Comment{$n$ es el número de características}
+         \If {w[i] $\geq$ 0.2}
+            \State distance += w[i] $\ast$ (e2[i] - e1[i]) $\ast$ (e2[i] - e1[i])
+         \EndIf
+     \EndFor
+     \State \Return distance
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+Cabe destacar que en realidad estamos calculando al distancia euclídea al cuadrado, pues solo vamos a utilizarla para comparar. Como la función $f(x)=\sqrt{x}$ es creciente para $x\geq 0$ no hay problema en que hagamos esto, pues se mantiene el orden. De esta forma ahorramos tiempo de cálculo, pues esta función va a ser llamada muchas veces a lo largo del programa.\\
+
+También tenemos la función \verb|classifier_1nn_weights|, que clasifica un ejemplo basándose en la técnica del vecino más cercano. Debemos pasarle también el conjunto de entrenamiento con los ejemplos ya clasificados, y el vector de pesos. De nuevo, si queremos que el clasificador no tenga en cuenta los pesos podemos asumir que son todos $1$, aunque en realidad hay dos funciones separadas.
+
+\begin{algorithm}[h]
+\begin{algorithmic}
+
+\Function{classifier\_1nn\_weights}{e, training, self, w}
+     \State selected = $0$
+     \State dmin = $\infty$
+     \For{i $:=$ $0$ to $n-1$}  \Comment{$n$ es el número de ejemplos de entrenamiento}
+         \If {i $\neq$ self}
+            \State dist = distance\_sq\_weights(e, training[i], w)
+            \If {dist $<$ dmin}
+                \State dmin = dist
+                \State selected = i
+            \EndIf
+         \EndIf
+     \EndFor
+     \State \Return training[selected].category
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+En lo que sigue, para generar números aleatorios reales o enteros utilizamos los tipos predefinidos \verb|uniform_real_distribution| y \verb|uniform_int_distribution|, respectivamente.\\
+
+También se añade una función para \textit{evaluar} un vector de pesos sobre un conjunto de entrenamiento, que devuelve el valor de la función objetivo o \textit{fitness} que obtiene dicho vector. Esta es justo la métrica que vamos a usar para comparar dos vectores de pesos y decidir cuál de ellos es mejor. Es necesario emplear la técnica \textit{leave-one-out}, ya implementada en el clasificador con pesos.
+
+\begin{algorithm}[ht]
+\begin{algorithmic}
+
+\Function{evaluate}{training, w}
+    \State classified = $\emptyset$
+    \For {i $:=$ $0$ to $n-1$}  \Comment $n$ es el número de ejemplos de entrenamiento
+        \State classified.push\_back(classifier\_1nn\_weights(training[i], training, i, w))
+    \EndFor
+\State \Return objective(class\_rate(classified, training), red\_rate(w))
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Operadores comunes P3}
+\label{op_comunes}
+\addcontentsline{toc}{subsection}{\nameref{op_comunes}}
+
+\subsection*{{\color{red}Función objetivo}}
+
+La función objetivo que queremos maximizar se implementa tal y como se dijo en la descripción del problema, donde el valor $\alpha$ prefijado es de 0.5, dando la misma importancia a la precisión y a la simplicidad.
+
+\begin{verbatim}
+objective(class_rate, red_rate) {
+  return alpha * class_rate + (1.0 - alpha) * red_rate;
+}
+\end{verbatim}
+
+Para calcular la tasa de clasificación y de reducción utilizamos otras funciones también muy sencillas. La primera mide el porcentaje de acierto sobre un vector de elementos que el clasificador ha clasificado, y cuya clase real conocemos. La segunda simplemente contabiliza qué porcentaje de los pesos son menores que $0.2$.
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{class\_rate}{classified, test}
+    \State correct = $0$
+    \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de ejemplos clasificados}
+        \If {classified[i] $==$ test[i].category}
+            \State correct++
+        \EndIf
+    \EndFor
+    \State \Return $100.0$ * correct / n
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+\vspace{-1em}
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{red\_rate}{w}
+    \State discarded = $0$
+    \For{i $:=$ $0$ to $n-1$}  \Comment{n es el tamaño del vector de pesos}
+        \If {w[i] $<$ $0.2$}
+            \State discarded++
+        \EndIf
+    \EndFor
+    \State \Return $100.0$ * discarded / n
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+
+\newpage
+\section{Descripción de los algoritmos considerados}
+En esta sección se describen los algoritmos implementados en esta práctica para el problema del APC. En todos ellos lo que se pretende es rellenar un vector de pesos para maximizar la función objetivo.
+
+\subsection*{Consideraciones comunes}
+\label{comunes}
+\addcontentsline{toc}{subsection}{\nameref{comunes}}
+
+Todos los algoritmos desarrollados comparten una serie de comportamientos, que detallamos a continuación con el fin de evitar repeticiones.\\
+
+\subsection*{Enfriamiento simulado}
+\label{es}
+\addcontentsline{toc}{subsection}{\nameref{es}}
+
+- Se aplica la filosofía habitual de búsqueda de
+diversificar al principio e intensificar al final.
+
+- Con el aumento de iteraciones
+disminuye la probabilidad de
+aceptar soluciones peores que
+la actual. A mayor temperatura, mayor probabilidad de aceptación de
+soluciones peores. Así, el algoritmo acepta soluciones mucho
+peores que la actual al principio de la ejecución (exploración) pero
+no al final (explotación)
+
+- Metrópolis con k=1. En el modelo de Metrópolis, se genera una perturbación aleatoria en el
+sistema y se calculan los cambios de energía resultantes: si hay una
+caída energética, el cambio se acepta automáticamente; por el contrario,
+si se produce un incremento energético, el cambio será aceptado con
+una probabilidad indicada por la anterior expresión.
+
+- Si la temperatura es muy baja respecto al tamaño del salto entonces
+hay riesgos de quedar atrapado en un óptimo local.
+
+\subsection*{Búsqueda local reiterada}
+\label{bl}
+\addcontentsline{toc}{subsection}{\nameref{bl}}
+
+
+\subsection*{Evolución diferencial}
+\label{ed}
+\addcontentsline{toc}{subsection}{\nameref{ed}}
+
+\newpage
+\section{Procedimiento considerado para desarrollar la práctica}
+
+Todo el código de la práctica se ha desarrollado en C++ siguiendo el estándar 2011. Se utiliza la biblioteca \verb|std| y otras bibliotecas auxiliares, pero no se ha hecho uso de ningún \textit{framework} de metaheurísticas.\\
+
+Para todos los procedimientos que implican aleatoreidad se utiliza un generador de números aleatorios común (llamado \verb|generator|), inicializado con una semilla concreta. La semilla por defecto es $2019$, aunque se puede especificar otra mediante línea de comandos. La evaluación de todos los algoritmos considerados se realiza mediante la función \verb|run_p2|, que también se encarga de recoger las estadísticas oportunas.\\
+
+Se proporciona un makefile para compilar los archivos y generar un ejecutable (con optimización \verb|-O3|), mediante la orden \verb|make p3|. A la hora de ejecutarlo hay dos opciones:
+
+\begin{itemize}
+    \item Pasarle como parámetro una semilla para el generador aleatorio, y a continuación una lista de archivos sobre los que ejecutar los algoritmos (ruta relativa).
+    \item Ejecutarlo sin argumentos. En este caso, utiliza la semilla por defecto y ejecuta los algoritmos sobre los tres conjuntos de datos de la carpeta \verb|DATA|.
+\end{itemize}
+
+El código está disponible en la carpeta \verb|FUENTES|, y consta de los siguientes módulos:
+
+\begin{itemize}
+	\item \verb|p3.cpp| Contiene la implementación de los algoritmos, y las funciones necesarias para ejecutarlos.
+	\item \verb|timer| Módulo para medir tiempos en UNIX.
+	\item \verb|util| Se trata de funciones auxiliares para el preprocesamiento de los archivos de datos, el cálculo de la distancia, etc.
+\end{itemize}
+
+Al compilar se genera un único ejecutable en la carpeta \verb|BIN| de nombre \verb|p3|.\\
+
+Todas las ejecuciones se han realizado en un máquina con sistema operativo \verb|Linux| y procesador Intel Core i5-7200U @ 2.5GHz.
+
+\newpage
+\section{Algoritmos de comparación}
+
+Para comparar las metaheurísticas implementadas en esta práctica usaremos los algoritmos implementados en la práctica 1, a saber: el clasificador $1-$NN sin pesos, el algoritmo RELIEF y la búsqueda local.
+
+\subsection*{{\color{red} Clasificador $\mathbf{1}$-NN sin pesos}}
+
+Ya se ha descrito en la sección de operadores comunes (podemos considerar que es un clasificador con pesos, donde todos los pesos valen $1$).
+
+\subsection*{{\color{red} Algoritmo \textit{greedy} RELIEF}}
+
+Este es un algoritmo voraz muy sencillo, que servirá como caso base para comparar las diferentes metaheurísticas desarrolladas. Se trata de buscar, para cada ejemplo, su amigo (misma clase) y su enemigo (distinta clase) más cercano. Después, componente a componente se suma al vector de pesos la distancia a su enemigo, y se resta la distancia a su amigo.\\
+
+En este proceso es posible que los pesos se salgan del intervalo $[0,1]$, por lo que al finalizar es necesario normalizarlos. Además, no debemos olvidar que el algoritmo comienza con el vector de pesos relleno de $0$s. Disponemos para ello de una función \verb|init_vector| que se encarga de darle un valor inicial de $0$ a todas las componentes del vector de pesos.\\
+
+Separamos la función que se encarga de buscar los amigos y enemigos más cercanos, teniendo en cuenta que el amigo más cercano no puede ser el propio ejemplo.
+
+\begin{algorithm}[h]
+\begin{algorithmic}
+
+\Function{nearest\_example}{training, e, self}
+     \State dmin\_friend = $\infty$
+     \State dmin\_enemy = $\infty$
+     \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de ejemplos de entrenamiento}
+         \If {i $\neq$ self}
+            \State dist = distance\_sq(e, training[i])
+            \If {training[i].category $!=$ e.category \textit{and} dist < dmin\_enemy}
+                  \State n\_enemy = i
+                  \State dmin\_enemy = dist
+            \ElsIf {training[i].category == e.category \textit{and} dist < dmin\_friend)}
+                  \State n\_friend = i
+                  \State dmin\_friend = dist
+            \EndIf
+          \EndIf
+       \EndFor
+   \State \Return n\_enemy, n\_friend
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+El algoritmo RELIEF se detalla ya en la página siguiente.
+\newpage
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{relief}{training}
+     \State w = init\_vector()
+     \For{i $:=$ $0$ to $n-1$}  \Comment{n es el número de ejemplos de entrenamiento}
+         \State n\_enemy, n\_friend = nearest\_example(training, training[i], i)
+         \For{j $:=$ $0$ to $m - 1$}  \Comment {m es el tamaño del vector de pesos}
+            \State w[j] = w[j] + $|$training[i].traits[j] - training[n\_enemy].traits[j]$|$
+            \State \hspace{2.5em} $-$ $|$training[i].traits[j] - training[n\_friend].traits[j]$|$
+
+         \EndFor
+      \EndFor
+      \State max = max(w)
+      \For {j $:=$ $0$ to $m-1$}  \Comment{normalizamos los pesos}
+        \If {w[j] $<$ 0}
+            \State w[j] = 0
+        \Else
+            \State w[j] = w[j] / max
+        \EndIf
+      \EndFor
+\State \Return w
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsection*{{\color{red} Búsqueda local}}
+
+Es un algoritmo prácticamente idéntico a la búsqueda local de baja intensidad que se ha explicado anteriormente. La diferencia es que inicializamos el vector inicial partiendo de una distribución uniforme $\mathcal U(0,1)$, y también que cuando generamos un vecino que mejora, reiniciamos el vector de índices. \\
+
+Detenemos la búsqueda cuando llegamos al máximo de iteraciones, o cuando generamos un número de vecinos (dependiente del número de características) sin mejorar la función objetivo.\\
+
+Mostramos el pseudocódigo en la siguiente página.
+
+\newpage
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{local\_search}{training}
+
+\State w, index = initialize()
+
+\State best\_objective = evaluate(training, w)
+
+  \While {iter $<$ MAX\_ITER \textit{and} neighbour $<$ n * MAX\_NEIGHBOUR\_PER\_TRAIT}
+    \State comp = index[iter $\%$ n]
+    \State w\_mut = w
+    \State w\_mut[comp] += normal(gen)
+
+    \If {w\_mut[comp] $>$ $1$} \State w\_mut[comp] = $1$
+    \ElsIf {w\_mut[comp] $<$ $0$} \State w\_mut[comp] = $0$
+    \EndIf
+    \State current\_objective = evaluate(training, w)
+    \State iter++
+
+    \If {current\_objective $>$ best\_objective}
+      \State mut++
+      \State neighbour = $0$
+      \State w = w\_mut
+      \State best\_objective = current\_objective
+      \State improvement = true
+
+    \Else
+      \State neighbour++
+    \EndIf
+
+    \If {iter $\%$ $n == 0$ \textit{or} improvement}
+      \State shuffle(index.begin(), index.end(), gen)
+      \State improvement = false
+    \EndIf
+  \EndWhile
+
+\State \Return w
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+\section{Resultados}
+
+\subsection*{Descripción de los casos del problema}
+\label{casos}
+\addcontentsline{toc}{subsection}{\nameref{casos}}
+
+Se consideran tres conjuntos de datos sobre los que ejecutar los algoritmos:
+
+\begin{itemize}
+	\item \textbf{Colposcopy.} La colposcopia es un procedimiento ginecológico que
+consiste en la exploración del cuello uterino. Consta de 287 ejemplos, 62 atributos reales y dos clases: positivo o negativo.
+    \item \textbf{Ionosphere.} Datos de radar recogidos por un sistema en Goose Bay, Labrador. Consta de 351 ejemplos, 34 atributos y dos clases: retornos buenos (g) y malos (b).
+    \item \textbf{Texture.} El objetivo de este conjunto de datos es distinguir entre 11
+texturas diferentes. Consta de 550 ejemplos, 40 atributos y 11 clases (tipos de textura).
+\end{itemize}
+
+\subsection*{Resultados obtenidos}
+\label{resultados}
+\addcontentsline{toc}{subsection}{\nameref{resultados}}
+
+A continuación se muestran las tablas de unos resultados obtenidos para cada uno de los algoritmos. El orden de las columnas es siempre el mismo: primero \textit{colposcopy}, después \textit{ionosphere}, y por último \textit{texture}. La semilla utilizada es la semilla por defecto: $2019$.\\
+
+Para cada conjunto de datos se muestra una tabla con cada una de las 5 ejecuciones realizadas, de acuerdo a la técnica $5-$\textit{fold cross validation}. En cada una de ellas se muestran los valores de la tasa de clasificación (Clas), tasa de reducción (Red), función objetivo (Agr) y tiempo de ejecución (T) \textbf{en segundos}. Además, se muestra finalmente una tabla global con los resultados medios de cada conjunto de datos para todos los algoritmos. Esta información también se recoge en la última fila de las tablas de cada algoritmo.\\
+
+{\color{red}\textbf{Clasificador $\boldsymbol{1-}$NN sin pesos}}
+
+\begin{table}[ht!]
+\begin{tabular}{ccccc|cccc|cccc}
+\centering
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 69.49 & 0.00 & 34.75 & 0.001 & 88.73 & 0.00 & 44.37 & 0.001 & 93.64 & 0.00 & 46.82 & 0.002\\
+2 & 75.44 & 0.00 & 37.72 & 0.001 & 90.00 & 0.00 & 45.00 & 0.001 & 96.36 & 0.00 & 48.18 & 0.002\\
+3 & 70.18 & 0.00 & 35.09 & 0.001 & 91.43 & 0.00 & 45.71 & 0.001 & 92.73 & 0.00 & 46.36 & 0.002\\
+4 & 77.19 & 0.00 & 38.60 & 0.001 & 81.43 & 0.00 & 40.71 & 0.001 & 89.09 & 0.00 & 44.55 & 0.002\\
+5 & 82.46 & 0.00 & 41.23 & 0.001 & 85.71 & 0.00 & 42.86 & 0.001 & 97.27 & 0.00 & 48.64 & 0.002\\
+\hline
+$\bar{x}$  & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82 & 0.00 & 46.91 & 0.002
+\end{tabular}
+\end{table}
+
+
+\newpage
+
+{\color{red}\textbf{Algoritmo RELIEF}}
+
+\begin{table}[ht!]
+\begin{tabular}{ccccc|cccc|cccc}
+\centering
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 69.49 & 37.10 & 53.29 & 0.004 & 91.55 & 2.94 & 47.25 & 0.003 & 97.27 & 7.50 & 52.39 & 0.01\\
+2 & 73.68 & 33.87 & 53.78 & 0.004 & 91.43 & 2.94 & 47.18 & 0.003 & 97.27 & 5.00 & 51.14 & 0.01\\
+3 & 70.18 & 17.74 & 43.96 & 0.004 & 91.43 & 2.94 & 47.18 & 0.003 & 92.73 & 5.00 & 48.86 & 0.01\\
+4 & 78.95 & 62.90 & 70.93 & 0.004 & 82.86 & 2.94 & 42.90 & 0.003 & 89.09 & 2.50 & 45.80 & 0.01\\
+5 & 80.70 & 40.32 & 60.51 & 0.004 & 85.71 & 2.94 & 44.33 & 0.003 & 97.27 & 12.50 & 54.89 & 0.01\\
+\hline
+$\bar{x}$ & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.003 & 94.73 & 6.50 & 50.61 & 0.01
+\end{tabular}
+\end{table}
+
+{\color{red}\textbf{Algoritmo de búsqueda local}}
+
+\begin{table}[ht!]
+\begin{tabular}{ccccc|cccc|cccc}
+\centering
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1 & 77.97 & 82.26 & 80.11 & 19.395 & 84.51 & 82.35 & 83.43 & 3.285 & 88.18 & 77.50 & 82.84 & 21.465\\
+2 & 68.42 & 77.42 & 72.92 & 10.405 & 82.86 & 85.29 & 84.08 & 5.334 & 88.18 & 80.00 & 84.09 & 14.294\\
+3 & 75.44 & 85.48 & 80.46 & 15.763 & 80.00 & 91.18 & 85.59 & 9.516 & 92.73 & 82.50 & 87.61 & 25.764\\
+4 & 71.93 & 82.26 & 77.09 & 16.191 & 90.00 & 91.18 & 90.59 & 10.026 & 84.55 & 85.00 & 84.77 & 14.206\\
+5 & 77.19 & 75.81 & 76.50 & 16.671 & 85.71 & 82.35 & 84.03 & 4.443 & 93.64 & 87.50 & 90.57 & 24.355\\
+\hline
+$\bar{x}$  & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89.45 & 82.50 & 85.98 & 20.017
+\end{tabular}
+\end{table}
+
+
+
+\textbf{Resumen global}\\
+
+Se recalca en \textbf{negrita} el mejor agregado para cada conjunto de datos, y en {\color{blue} azul} el segundo mejor.
+
+\begin{table}[h]
+\begin{tabular}{ccccc|cccc|cccc}
+\centering
+ & \multicolumn{4}{c}{\textit{Colposcopy}} & \multicolumn{4}{c}{\textit{Ionosphere}} & \multicolumn{4}{c}{\textit{Texture}} \\ \hline
+\textbf{Alg} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
+1-NN & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82 & 0.00 & 46.91 & 0.002\\
+RELIEF & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.004 & 94.73 & 6.50 & 50.61 & 0.01\\
+BL & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89.45 & 82.50 & 85.98 & 20.017\\
+\end{tabular}
+\end{table}
+
+\subsection*{{\color{red}Análisis de resultados P1}}
+
+En primer lugar, observamos que las tasas de clasificación obtenidas mediante el clasificador $1-$NN sin pesos, aunque pueden llegar a ser altas según el \textit{dataset}, no contribuyen en exceso al agregado total. Esto era de esperar, pues en este clasificador la simplicidad es siempre $0$, la mínima posible.\\
+
+Tomando como ejemplo el conjunto de datos \textit{texture}, vemos que tiene una tasa de clasificación media de $92\%$ en este ejemplo, por lo que podemos concluir que las características medidas están bien elegidas. Sin embargo, el conjunto \textit{colposcopy} tiene una tasa de clasificación media de solo $75\%$, lo que nos hace pensar que podríamos mejorar seleccionando con más cuidado las características a medir.\\
+
+En cuanto al algoritmo RELIEF, al tratarse de un algoritmo \textit{greedy} es posible que no proporcione siempre la mejor solución. Al permitir que la tasa de reducción no sea $0$ estamos aumentando la simplicidad, y por tanto potencialmente aumentando el valor de la función objetivo. Vemos que efectivamente esto es lo que ocurre, pues consistentemente en todos los conjuntos de datos mejoramos dicho valor con respecto al clasificador sin pesos. Además, el tiempo de ejecución de este algoritmo sigue siendo despreciable, por lo que constituye un buen punto de partida para la comparación con otras metaheurísticas.\\
+
+Por último, el algoritmo de búsqueda local es el más costoso en tiempo, llegando a tardar del orden de 1000 veces más por partición que los anteriores. Sin embargo, este algoritmo consigue tasas de reducción muy altas, es decir, aumenta mucho la simplicidad del clasificador. Al ser un algoritmo de búsqueda local típicamente caemos en óptimos locales, por lo que no conseguimos la solución óptima. Sin embargo, en muchas ocasiones llegamos a una solución \textit{suficientemente buena}, como demuestran los resultados obtenidos.\\
+
+En este último algoritmo conseguimos aumentar considerablemente el valor de la función objetivo en todos los casos, rondando el 80$\%$, a costa de un tiempo de ejecución mayor (aunque todavía viable). Aún queda ver cómo se comporta este algoritmo relativamente sencillos con otros que implementemos en el futuro.\\
+
+Por último, cabe destacar que en cuanto a la tasa de clasificación, el algoritmo RELIEF es competitivo con el de la búsqueda local, llegando a ser mejor que este último en varias ocasiones. En cualquier caso, el algoritmo voraz no consigue llegar (ni se acerca) a las tasas de reducción que consigue la búsqueda local.
+
+\subsection*{Análisis de resultados P3}
+\label{analisis}
+\addcontentsline{toc}{subsection}{\nameref{analisis}}
+
+
+\end{document}
