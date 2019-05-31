@@ -24,7 +24,7 @@ p3: $(BIN)/p3
 # ************ Generación de ejecutables *************
 
 # -- Práctica 3 --
-$(BIN)/p2: $(OBJECTS) $(OBJ)/p3.o
+$(BIN)/p3: $(OBJECTS) $(OBJ)/p3.o
 	$(CXX) -o $@ $^
 
 # -- Práctica 2 --
