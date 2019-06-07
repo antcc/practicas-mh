@@ -37,10 +37,42 @@ const float mu = 0.3;
 float final_temp = 1e-3;
 
 // Maximum number of neighbours generated per trait
-const int MAX_NEIGHBOUR_PER_TRAIT = 10;
+const int MAX_NEIGHBOUR_PER_TRAIT_ES = 10;
 
 // Maximum number of successful generations per neighbour
 const float MAX_SUCCESS_PER_NEIGHBOUR = 0.1;
+
+// Maximum number of iterations
+const int MAX_ITER_ES = 15000;
+
+// -- ILS --
+const float sigma_ils = 0.4;
+
+// Maximum number of iterations for local search
+const int MAX_ITER_LS = 1000;
+
+// Number of iterations for ILS
+const int ITER_ILS = 15;
+
+// Maximum number of neighbours generated per trait
+const int MAX_NEIGHBOUR_PER_TRAIT_ILS = 20;
+
+// Percentage of traits to mutate
+const float MUTATION_FACTOR_ILS = 0.1;
+
+// -- Differential evolution --
+
+// Cross probability
+const float CR = 0.5;
+
+// Parameter for crossing
+const float F = 0.5;
+
+// Maximum iterations for DE
+const int MAX_ITER_DE = 1000;
+
+// Population size
+const int SIZE_DE = 50;
 
 // -- General --
 
@@ -49,9 +81,6 @@ const float alpha = 0.5;
 
 // Standard deviation for normal distribution
 const float sigma = 0.3;
-
-// Maximum number of iterations
-const int MAX_ITER = 15000;
 
 // Number of algorithms
 constexpr int NUM_ALGORITHMS = 4;
@@ -72,10 +101,21 @@ default_random_engine generator;
 
 // ---------------------------- Data strutures --------------------------------------
 
+// An evaluated solution
 struct Solution {
   vector<double> w;
   float fitness;
 };
+
+// Custom comparator for solutions
+struct SolutionComp {
+  bool operator()(const Solution& lhs, const Solution& rhs) {
+    return lhs.fitness < rhs.fitness;
+  }
+};
+
+// Population
+typedef multiset<Solution, SolutionComp> Population;
 
 // ------------------------------ Functions -----------------------------------------
 
@@ -164,7 +204,7 @@ Solution init_solution(const vector<Example> training, int n) {
 }
 
 // Mutate a component of a weight vector
-void mutate(vector<double>& w, int comp) {
+void mutate(vector<double>& w, int comp, float sigma) {
   normal_distribution<double> normal(0.0, sigma);
   w[comp] += normal(generator);
 
@@ -190,26 +230,25 @@ void simulated_annealing(const vector<Example>& training, vector<double>& w) {
   // 1. Initialize solution and temperature
   sol = init_solution(training, n);
   best_sol = sol;
-  iter++;
-  initial_temp = (mu * best_sol.fitness) / (- 1.0 * log(phi));
+  initial_temp = (mu * (1.0 - best_sol.fitness / 100.0)) / (- 1.0 * log(phi));
   temp = initial_temp;
 
-  if (final_temp >= temp)
+  while (final_temp >= temp)
     final_temp = temp / 100.0;
 
 #if DEBUG >= 1
   cerr << endl << "Temperatura final: " << final_temp << endl << endl;
 #endif
 
-  const int MAX_NEIGHBOUR = MAX_NEIGHBOUR_PER_TRAIT * n;
+  const int MAX_NEIGHBOUR = MAX_NEIGHBOUR_PER_TRAIT_ES * n;
   const int MAX_SUCCESS = MAX_SUCCESS_PER_NEIGHBOUR * MAX_NEIGHBOUR;
-  const int M = MAX_ITER / MAX_NEIGHBOUR;
+  const int M = MAX_ITER_ES / MAX_NEIGHBOUR;
   const float beta = (float) (initial_temp - final_temp) / (M * initial_temp * final_temp);
 
   // 2. Outer loop
   successful = MAX_SUCCESS;
-  iter = 0;
-  while(iter < MAX_ITER && successful != 0) {
+  iter = 1;
+  while(iter < MAX_ITER_ES && successful != 0) {
     neighbour = 0;
     successful = 0;
 
@@ -219,17 +258,21 @@ void simulated_annealing(const vector<Example>& training, vector<double>& w) {
 #endif
 
     // 3. Inner loop (cooling)
-    while(iter < MAX_ITER && neighbour < MAX_NEIGHBOUR && successful < MAX_SUCCESS) {
+    while(iter < MAX_ITER_ES && neighbour < MAX_NEIGHBOUR && successful < MAX_SUCCESS) {
       // 4. Mutate random component
       int comp = random_int(generator);
       Solution sol_mut = sol;
-      mutate(sol_mut.w, comp);
+      mutate(sol_mut.w, comp, sigma);
       sol_mut.fitness = evaluate(training, sol_mut.w);
       iter++;
       neighbour++;
 
       // 5. Acceptance criterion
       float diff = sol.fitness - sol_mut.fitness;  // We are maximizing the fitness
+
+      // Avoid always accepting every neighbour if the difference is 0
+      if (diff == 0)
+        diff = 0.001;
 
       if (diff < 0 || random_real(generator) <= exp(-1.0 * diff / temp)) {
         successful++;
@@ -254,15 +297,89 @@ void simulated_annealing(const vector<Example>& training, vector<double>& w) {
 #endif
 
   w = best_sol.w;
-
 }
 
 /***********************************************************************************/
 /* ITERATED LOCAL SEARCH
 /***********************************************************************************/
 
-void ils(const vector<Example>& training, vector<double>& w) {
+void local_search(const vector<Example>& training, Solution& s) {
+  const int n = s.w.size();
+  vector<int> index;
+  double best_fitness = s.fitness;
+  int iter = 0;
+  int neighbour = 0;
+  bool improvement = false;
 
+  // Initialize index vector
+  for (int i = 0; i < n; i++)
+    index.push_back(i);
+  shuffle(index.begin(), index.end(), generator);
+
+  // Best-first search
+  while (iter < MAX_ITER_LS && neighbour < n * MAX_NEIGHBOUR_PER_TRAIT_ILS) {
+    // Select component to mutate
+    int comp = index[iter % n];
+
+    // Mutate weight vector
+    Solution s_mut = s;
+    mutate(s_mut.w, comp, sigma);
+    s_mut.fitness = evaluate(training, s_mut.w);
+    iter++;
+
+    if (s_mut.fitness > best_fitness) {
+      neighbour = 0;
+      s = s_mut;
+      best_fitness = s_mut.fitness;
+      improvement = true;
+    }
+
+    else {
+      neighbour++;
+    }
+
+    // Update index vector if needed
+    if (iter % n == 0 || improvement) {
+      shuffle(index.begin(), index.end(), generator);
+      improvement = false;
+    }
+  }
+}
+
+void ils(const vector<Example>& training, vector<double>& w) {
+  int n = w.size();
+  uniform_int_distribution<int> random_int(0, n - 1);
+  Solution s = init_solution(training, n);
+
+  // 1. Apply local search to initial solution
+  local_search(training, s);
+
+  for (int i = 1; i < ITER_ILS; i++) {
+    // 2. Mutate some traits
+    Solution s_mut = s;
+
+    set<int> mutated;
+    for (int j = 0; j < (int) MUTATION_FACTOR_ILS * n; j++) {
+      int comp;
+
+      while(mutated.size() == j) { // Avoid repeating component to mutate
+        comp = random_int(generator);
+        mutated.insert(comp);
+      }
+
+      mutate(s_mut.w, comp, sigma_ils);
+    }
+
+    // 3. Reiterate local search
+    s_mut.fitness = evaluate(training, s_mut.w);
+    local_search(training, s_mut);
+
+    // 4. Acceptance criterion
+    if (s_mut.fitness > s.fitness)
+      s = s_mut;
+  }
+
+  w = s.w;
 }
 
 /***********************************************************************************/
@@ -335,7 +452,7 @@ void run_p3(const string& filename) {
   };
 
   // Run every algorithm
-  for (int p = 0; p < 1; p++) {
+  for (int p = 1; p < 2; p++) {
 
 #if TABLE < 2
     cout << "---------" << endl;
@@ -401,7 +518,7 @@ void run_p3(const string& filename) {
   cout << "------------------------------------------" << endl << endl;
 #endif
 
-  for (int p = 0;  p < 1; p++) {
+  for (int p = 1;  p < 2; p++) {
 
 #if TABLE < 2
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
