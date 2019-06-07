@@ -46,6 +46,7 @@ const float MAX_SUCCESS_PER_NEIGHBOUR = 0.1;
 const int MAX_ITER_ES = 15000;
 
 // -- ILS --
+
 const float sigma_ils = 0.4;
 
 // Maximum number of iterations for local search
@@ -69,10 +70,16 @@ const float CR = 0.5;
 const float F = 0.5;
 
 // Maximum iterations for DE
-const int MAX_ITER_DE = 1000;
+const int MAX_ITER_DE = 15000;
 
 // Population size
 const int SIZE_DE = 50;
+
+// Number of parents to select in rand/1
+const int NUM_PARENTS_RAND = 3;
+
+// Number of parents to select in current-to-best/1
+const int NUM_PARENTS_BEST = 2;
 
 // -- General --
 
@@ -112,10 +119,10 @@ struct SolutionComp {
   bool operator()(const Solution& lhs, const Solution& rhs) {
     return lhs.fitness < rhs.fitness;
   }
-};
+} solution_comp;
 
 // Population
-typedef multiset<Solution, SolutionComp> Population;
+typedef vector<Solution> Population;
 
 // ------------------------------ Functions -----------------------------------------
 
@@ -386,12 +393,127 @@ void ils(const vector<Example>& training, vector<double>& w) {
 /* DIFFERENTIAL EVOLUTION
 /***********************************************************************************/
 
-void de_rand(const vector<Example>& training, vector<double>& w) {
+// Pick 3 random distinct parents from 'pop', which are also distinct
+// from the element at pop[self]
+void select_parents(const Population& pop, Population& selected, int num_parents, int parent) {
+  uniform_int_distribution<int> random_int(0, pop.size() - 1);
+  set<int> candidates;
+  int index;
 
+  for (int i = 0; i < num_parents; i++) {
+    while(candidates.size() == i) {
+      index = random_int(generator);
+      if (index != parent)
+        candidates.insert(index);
+    }
+    selected.push_back(pop[index]);
+  }
+}
+
+void de_rand(const vector<Example>& training, vector<double>& w) {
+  Population pop;
+  int iter = 0;
+  uniform_real_distribution<double> random_real(0.0, 1.0);
+  const int n = w.size();
+
+  // 1. Initialize initial population
+  for (int i = 0; i < SIZE_DE; i++) {
+    pop.push_back(init_solution(training, n));
+    iter++;
+  }
+
+  while (iter < MAX_ITER_DE) {
+    Population parents;
+
+    for (int i = 0; i < SIZE_DE; i++) {
+      Solution offspring;
+      offspring.w.resize(n);
+
+      // 2. Select parents for crossing
+      select_parents(pop, parents, NUM_PARENTS_RAND, i);
+
+      // 3. Cross parents
+      for (int k = 0; k < n; k++) {
+        if (random_real(generator) <= CR) {
+          offspring.w[k] = parents[0].w[k] + F * (parents[1].w[k] - parents[2].w[k]);
+
+          // Truncate to [0,1]
+          if (offspring.w[k] < 0.0) offspring.w[k] = 0.0;
+          if (offspring.w[k] > 1.0) offspring.w[k] = 1.0;
+        }
+
+        else {
+          offspring.w[k] = pop[i].w[k];
+        }
+      }
+
+      // 4. Evaluate offspring
+      offspring.fitness = evaluate(training, offspring.w);
+      iter++;
+
+      // 5. Update population
+      if (offspring.fitness > pop[i].fitness)
+        pop[i] = offspring;
+    }
+  }
+
+  // 6. Sort solutions (last is best)
+  sort(pop.begin(), pop.end(), solution_comp);
+
+  w = pop[SIZE_DE - 1].w;
 }
 
 void de_current_to_best(const vector<Example>& training, vector<double>& w) {
+  Population pop;
+  int iter = 0;
+  uniform_real_distribution<double> random_real(0.0, 1.0);
+  const int n = w.size();
 
+  // 1. Initialize initial population
+  for (int i = 0; i < SIZE_DE; i++) {
+    pop.push_back(init_solution(training, n));
+    iter++;
+  }
+
+  while (iter < MAX_ITER_DE) {
+    Population parents;
+
+    for (int i = 0; i < SIZE_DE; i++) {
+      Solution offspring;
+      offspring.w.resize(n);
+
+      // 2. Select parents for crossing
+      select_parents(pop, parents, NUM_PARENTS_RAND, i);
+
+      // 3. Cross parents
+      for (int k = 0; k < n; k++) {
+        if (random_real(generator) <= CR) {
+          offspring.w[k] = parents[0].w[k] + F * (parents[1].w[k] - parents[2].w[k]);
+
+          // Truncate to [0,1]
+          if (offspring.w[k] < 0.0) offspring.w[k] = 0.0;
+          if (offspring.w[k] > 1.0) offspring.w[k] = 1.0;
+        }
+
+        else {
+          offspring.w[k] = pop[i].w[k];
+        }
+      }
+
+      // 4. Evaluate offspring
+      offspring.fitness = evaluate(training, offspring.w);
+      iter++;
+
+      // 5. Update population
+      if (offspring.fitness > pop[i].fitness)
+        pop[i] = offspring;
+    }
+  }
+
+  // 6. Sort solutions (last is best)
+  sort(pop.begin(), pop.end(), solution_comp);
+
+  w = pop[SIZE_DE - 1].w;
 }
 
 /***********************************************************************************/
@@ -452,7 +574,7 @@ void run_p3(const string& filename) {
   };
 
   // Run every algorithm
-  for (int p = 1; p < 2; p++) {
+  for (int p = 2; p < 3; p++) {
 
 #if TABLE < 2
     cout << "---------" << endl;
@@ -518,7 +640,7 @@ void run_p3(const string& filename) {
   cout << "------------------------------------------" << endl << endl;
 #endif
 
-  for (int p = 1;  p < 2; p++) {
+  for (int p = 2;  p < 3; p++) {
 
 #if TABLE < 2
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
