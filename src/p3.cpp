@@ -227,7 +227,7 @@ void simulated_annealing(const vector<Example>& training, vector<double>& w) {
   Solution sol, best_sol;
   float temp;
   float initial_temp;
-  int iter;
+  int iter = 0;
   int successful;
   int neighbour;
   int n = w.size();
@@ -236,6 +236,7 @@ void simulated_annealing(const vector<Example>& training, vector<double>& w) {
 
   // 1. Initialize solution and temperature
   sol = init_solution(training, n);
+  iter++;
   best_sol = sol;
   initial_temp = (mu * (1.0 - best_sol.fitness / 100.0)) / (- 1.0 * log(phi));
   temp = initial_temp;
