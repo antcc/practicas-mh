@@ -498,7 +498,7 @@ MUTATE1(n, m):
       mutate(pop_temp[comp / m], comp % m) 
 \end{verbatim}
 
-La otra alternativa es realizar las mutaciones a nivel de cromosoma. Si $p_m$ es la probabilidad de que mute un solo gen, definimos \verb|pmut| = $p_m \cdot M$ como la probabilidad de que mute un cromosoma (por un solo gen). Esta alternativa es mejor cuando el tamaño de la población intermedia es pequeño, pues en esos casos el número esperado de mutaciones según la primera alternativa será casi siempre $0$. La que usaremos en los AGE. Si $n$ es el tamaño de la población intermedia:
+La otra alternativa es realizar las mutaciones a nivel de cromosoma. Si $p_m$ es la probabilidad de que mute un solo gen, definimos \verb|pmut| = $p_m \cdot M$ como la probabilidad de que mute un cromosoma (por un solo gen). Esta alternativa es mejor cuando el tamaño de la población intermedia es pequeño, pues en esos casos el número esperado de mutaciones según la primera alternativa será casi siempre $0$. Este segundo esquema es el que usaremos en los AGE. Si $n$ es el tamaño de la población intermedia:
 
 \begin{verbatim}
 MUTATE2(n, m):
