@@ -864,8 +864,8 @@ $\bar{x}$ & 72.13 & 84.52 & 78.32 & 50.92 & 89.17 & 88.24 & 88.70 & 41.72 & 85.4
 \textbf{Nº} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} & \textbf{Clas} & \textbf{Red} & \textbf{Agr} & \textbf{T} \\ \hline
 1 & 74.58 & 83.87 & 79.22 & 50.89 & 91.55 & 91.18 & 91.36 & 31.12 & 91.82 & 87.50 & 89.66 & 99.02\\
 2 & 68.42 & 85.48 & 76.95 & 51.78 & 87.14 & 91.18 & 89.16 & 31.44 & 88.18 & 85.00 & 86.59 & 101.22\\
-3 & 75.44 & 85.48 & 80.46 & 50.64 84.29 & 85.29 & 84.79 & 30.20 & 82.73 & 82.50 & 82.61 & 102.65\\
-4 & 73.68 & 85.48 & 79.58 & 51.47 84.29 & 85.29 & 84.79 & 31.80 & 83.64 & 87.50 & 85.57 & 99.24\\
+3 & 75.44 & 85.48 & 80.46 & 50.64 & 84.29 & 85.29 & 84.79 & 30.20 & 82.73 & 82.50 & 82.61 & 102.65\\
+4 & 73.68 & 85.48 & 79.58 & 51.47 & 84.29 & 85.29 & 84.79 & 31.80 & 83.64 & 87.50 & 85.57 & 99.24\\
 5 & 82.46 & 82.26 & 82.36 & 51.00 & 95.71 & 85.29 & 90.50 & 30.06 & 92.73 & 85.00 & 88.86 & 100.29\\
 \hline 
 $\bar{x}$  & 74.92 & 84.52 & 79.72 & 51.16  & 88.60 & 87.65 & 88.12 & 30.92  & 87.82 & 85.50 & 86.66 & 100.48
@@ -951,5 +951,40 @@ Por último, cabe destacar que en cuanto a la tasa de clasificación, el algorit
 \label{analisis}
 \addcontentsline{toc}{subsection}{\nameref{analisis}}
 
+Analizando primero el algoritmo de \textbf{enfriamiento simulado}, observamos que obtiene buenos resultados en los tres conjuntos de datos, llegando a obtener el segundo mejor agregado en \textit{Ionosphere} de entre los algoritmos desarrollados en esta práctica y en la práctica 1. En general supera a la búsqueda local en cuanto a tasa de reducción, pero al tener en cuenta la tasa agregada la ventaja se reduce, y de hecho en \textit{Texture} el agregado de la búsqueda local es mayor.\\
+
+Podemos observar en el gráfico de comparación de todos los algoritmos (ver abajo) que las soluciones sufren largos períodos de estancamiento. Esto puede deberse a que el esquema de Cauchy modificado enfría demasiado rápido, impidiendo así la introducción de diversidad en las etapas más tempranas de la búsqueda.\\
+
+En cuanto a la \textbf{búsqueda local reiterada}, vemos que este algoritmo basado en trayectorias múltiples resulta muy efectivo, siendo el segundo mejor en dos conjuntos de datos (sin contar genéticos ni meméticos). Si lo comparamos con la búsqueda local simple que implementamos en la práctica 1, vemos que como cabía esperar la supera ampliamente en cuanto a tasa agregada y tasa de reducción. La explicación es sencilla: al realizar una técnica multiarranque podemos escapar de óptimos locales (exploración), y el hecho de realizar después una búsqueda local nos permite intensificar la explotación del espacio de soluciones.\\
+
+Podemos apreciar en la siguiente gráfica la velocidad de convergencia de ILS y de la BL, que pone de manifiesto lo comentado anteriormente.\\
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=.9\textwidth]{img/ILS-LS.png}
+	\caption{Comparación en una ejecución concreta de los algoritmos de BL e ILS en \textit{ionosphere}.}
+\end{figure}
+
+Pasamos ya a analizar los algoritmos de \textbf{evolución diferencial}. Lo primero que observamos es que la versión aleatoria \textbf{proporciona los mejores resultados obtenidos hasta el momento con todos los algoritmos}, y en algunos casos con bastante diferencia. Las tasas de reducción obtenidas superan incluso a las obtenidas por los algoritmos genéticos, con un tiempo de ejecución no mucho mayor. Al tener una gran componente aleatoria en la recombinación, conseguimos escapar con facilidad de óptimos locales y seguir aumentando el valor de la función objetivo.\\
+
+Sin embargo, cuando analizamos la versión \textit{current-to-best}, que podríamos pensar que sería incluso mejor, vemos que los resultados dejan bastante que desear. Esta segunda versión queda por debajo de muchos algoritmos, e incluso llega a ser superada por la búsqueda local. Esto puede deberse a que introducimos una gran presión selectiva en el esquema de reemplazamiento, obteniendo una convergencia prematura hacia un óptimo local. Este efecto podemos observarlo en la gráfica de la página siguiente.\\
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=.9\textwidth]{img/DE.png}
+	\caption{Comparación en una ejecución concreta de los algoritmos de DE en \textit{ionosphere}.}
+\end{figure}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/todos.png}
+	\caption{Comparación en una ejecución concreta de todos los algoritmos en \textit{ionosphere}.}
+\end{figure}
+
+Por último, podemos observar que en general los algoritmos implementados en esta práctica son mejores que los implementados en la práctica 1, y bastante competitivos (y en muchos casos mejores) con los algoritmos genéticos y meméticos de la práctica 2. Notamos que los algoritmos de búsqueda basados en trayectorias no necesitan estructuras de datos auxiliares como los basados en poblaciones, y el código es bastante sencillo e intuitivo. \\
+
+El tiempo de ejecución para todos los algoritmos nuevos es similiar, y también parecido al de los algoritmos genéticos y meméticos. Aunque superan en tiempo de ejecución a la búsqueda local, parece que en este caso esta inversión extra sí merece la pena, pues los resultados obtenidos son mejores. El objetivo de los algoritmos implementados era intentar corregir los defectos que planteaba la búsqueda local, en particular el estancamiento prematuro en óptimos locales, y podemos concluir que el efecto conseguido es el deseado.\\
+
+Tras implementar todos los algoritmos a lo largo del curso, la conclusión a la que podemos llegar es que es complicado encontrar una metaheurística que se adapte perfectamente a todos los conjuntos de datos y casos del problema, y que consiga también un balance entre la exploración y explotación de soluciones para obtener finalmente una lo suficientemente buena.
 
 \end{document}
