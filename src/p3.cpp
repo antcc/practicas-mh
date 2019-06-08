@@ -295,8 +295,14 @@ void simulated_annealing(const vector<Example>& training, vector<double>& w) {
 #endif
 
     }
+
     // 6. Cool-down (Cauchy scheme)
     temp = temp / (1.0 + beta * temp);
+
+#if TABLE == 2
+    cout << iter << " " << best_sol.fitness << endl;
+#endif
+
   }
 
 #if DEBUG >= 1
@@ -358,10 +364,19 @@ void ils(const vector<Example>& training, vector<double>& w) {
   uniform_int_distribution<int> random_int(0, n - 1);
   Solution s = init_solution(training, n);
 
+#if TABLE == 2
+    cout << "0 " << s.fitness << endl;
+#endif
+
   // 1. Apply local search to initial solution
   local_search(training, s);
 
   for (int i = 1; i < ITER_ILS; i++) {
+
+#if TABLE == 2
+    cout << to_string(1000 * i) << " " << s.fitness << endl;
+#endif
+
     // 2. Mutate some traits
     Solution s_mut = s;
 
@@ -385,6 +400,10 @@ void ils(const vector<Example>& training, vector<double>& w) {
     if (s_mut.fitness > s.fitness)
       s = s_mut;
   }
+
+#if TABLE == 2
+    cout << "15000 " << s.fitness << endl;
+#endif
 
   w = s.w;
 }
@@ -458,7 +477,7 @@ void de_rand(const vector<Example>& training, vector<double>& w) {
     }
 
 #if TABLE == 2
-    cout << iter << " " << pop.[SIZE_DE - 1].fitness << endl;
+    cout << iter << " " << pop[SIZE_DE - 1].fitness << endl;
 #endif
 
   }
@@ -526,7 +545,7 @@ void de_current_to_best(const vector<Example>& training, vector<double>& w) {
     current_best = pop[SIZE_DE - 1];
 
 #if TABLE == 2
-    cout << iter << " " << pop.[SIZE_DE - 1].fitness << endl;
+    cout << iter << " " << pop[SIZE_DE - 1].fitness << endl;
 #endif
 
   }
@@ -592,7 +611,7 @@ void run_p3(const string& filename) {
   };
 
   // Run every algorithm
-  for (int p = 2; p < 4; p++) {
+  for (int p = 0; p < NUM_ALGORITHMS; p++) {
 
 #if TABLE < 2
     cout << "---------" << endl;
@@ -658,7 +677,7 @@ void run_p3(const string& filename) {
   cout << "------------------------------------------" << endl << endl;
 #endif
 
-  for (int p = 2;  p < 4; p++) {
+  for (int p = 0;  p < NUM_ALGORITHMS; p++) {
 
 #if TABLE < 2
     cout << "----- Resultados globales " << algorithms_names[p] << " -----" << endl << endl;
