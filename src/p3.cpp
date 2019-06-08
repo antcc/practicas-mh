@@ -456,6 +456,11 @@ void de_rand(const vector<Example>& training, vector<double>& w) {
       if (offspring.fitness > pop[i].fitness)
         pop[i] = offspring;
     }
+
+#if TABLE == 2
+    cout << iter << " " << pop.[SIZE_DE - 1].fitness << endl;
+#endif
+
   }
 
   // 6. Sort solutions (last is best)
@@ -519,6 +524,11 @@ void de_current_to_best(const vector<Example>& training, vector<double>& w) {
     // Find best solution in current population
     sort(pop.begin(), pop.end(), solution_comp);
     current_best = pop[SIZE_DE - 1];
+
+#if TABLE == 2
+    cout << iter << " " << pop.[SIZE_DE - 1].fitness << endl;
+#endif
+
   }
 
   w = current_best.w;
