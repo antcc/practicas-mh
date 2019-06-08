@@ -176,7 +176,7 @@ struct Example {
     vector<double> traits;
     string category;
     int n;
-}
+};
 \end{verbatim}
 
 Cada conjunto de datos se representa entonces por un \verb|vector<Example>|, y se emplea la función \verb|read_csv| para rellenar el vector, que va leyendo los archivos línea a línea.\\
@@ -188,6 +188,27 @@ Por su parte, la solución es un \verb|vector<double>| del mismo tamaño que el 
 \subsection*{Esquemas de representación P3}
 \label{representacion}
 \addcontentsline{toc}{subsection}{\nameref{representacion}}
+
+Añadimos una estructura de datos que representa una solución: un vector de pesos junto con su valor de la función objetivo o \textit{fitness}:
+
+\begin{verbatim}
+struct Solution {
+    vector<double> w;
+    float fitness;
+};
+\end{verbatim}
+
+Además, para representar una población (para el algoritmo de evolución diferencial) definimos una estructura que engloba varias soluciones, junto con un comparador para ellas, similar al que se empleó para la práctica anterior. El orden definido entre soluciones es el que viene determinado por su \textit{fitness}.
+
+\begin{verbatim}
+typedef vector<Solution> Population;
+
+struct SolutionComp {
+  bool operator()(const Solution& lhs, const Solution& rhs) {
+    return lhs.fitness < rhs.fitness;
+  }
+} solution_comp;
+\end{verbatim}
 
 \subsection*{{\color{red}Operadores comunes P1}}
 
@@ -211,7 +232,11 @@ Todos los algoritmos hacen uso del cálculo de la distancia. Como dijimos, para 
 
 Cabe destacar que en realidad estamos calculando al distancia euclídea al cuadrado, pues solo vamos a utilizarla para comparar. Como la función $f(x)=\sqrt{x}$ es creciente para $x\geq 0$ no hay problema en que hagamos esto, pues se mantiene el orden. De esta forma ahorramos tiempo de cálculo, pues esta función va a ser llamada muchas veces a lo largo del programa.\\
 
-También tenemos la función \verb|classifier_1nn_weights|, que clasifica un ejemplo basándose en la técnica del vecino más cercano. Debemos pasarle también el conjunto de entrenamiento con los ejemplos ya clasificados, y el vector de pesos. De nuevo, si queremos que el clasificador no tenga en cuenta los pesos podemos asumir que son todos $1$, aunque en realidad hay dos funciones separadas.
+También tenemos la función \verb|classifier_1nn_weights|, que clasifica un ejemplo basándose en la técnica del vecino más cercano. Debemos pasarle también el conjunto de entrenamiento con los ejemplos ya clasificados, y el vector de pesos. De nuevo, si queremos que el clasificador no tenga en cuenta los pesos podemos asumir que son todos $1$, aunque en realidad hay dos funciones separadas.\\
+
+En lo que sigue, para generar números aleatorios reales o enteros utilizamos los tipos predefinidos \verb|uniform_real_distribution| y \verb|uniform_int_distribution|, respectivamente.\\
+
+También se añade una función para \textit{evaluar} un vector de pesos sobre un conjunto de entrenamiento, que devuelve el valor de la función objetivo o \textit{fitness} que obtiene dicho vector. Esta es justo la métrica que vamos a usar para comparar dos vectores de pesos y decidir cuál de ellos es mejor. Es necesario emplear la técnica \textit{leave-one-out}, ya implementada en el clasificador con pesos.
 
 \begin{algorithm}[h]
 \begin{algorithmic}
@@ -234,10 +259,6 @@ También tenemos la función \verb|classifier_1nn_weights|, que clasifica un eje
 \end{algorithmic}
 \end{algorithm}
 
-En lo que sigue, para generar números aleatorios reales o enteros utilizamos los tipos predefinidos \verb|uniform_real_distribution| y \verb|uniform_int_distribution|, respectivamente.\\
-
-También se añade una función para \textit{evaluar} un vector de pesos sobre un conjunto de entrenamiento, que devuelve el valor de la función objetivo o \textit{fitness} que obtiene dicho vector. Esta es justo la métrica que vamos a usar para comparar dos vectores de pesos y decidir cuál de ellos es mejor. Es necesario emplear la técnica \textit{leave-one-out}, ya implementada en el clasificador con pesos.
-
 \begin{algorithm}[ht]
 \begin{algorithmic}
 
@@ -255,6 +276,44 @@ También se añade una función para \textit{evaluar} un vector de pesos sobre u
 \subsection*{Operadores comunes P3}
 \label{op_comunes}
 \addcontentsline{toc}{subsection}{\nameref{op_comunes}}
+
+En primer lugar, disponemos de una función \verb|init_solution| que se encarga de generar una solución inicial aleatoria, siguiendo como se pide una distribución uniforme en $[0, 1]$ para los pesos. Esta solución generada se devuelve ya correctamente evaluada.
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{init\_solution}{training, n}
+    \State sol = $\emptyset$
+    \For {i $:=$ $0$ to $n-1$}  \Comment $n$ es el tamaño del vector de pesos
+        \State sol.w[i] = random\_real$(0,1)$
+    \EndFor
+    \State sol.fitness = evaluate(training, sol.w) 
+\State \Return sol
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+También necesitaremos en los tres algoritmos una forma de mutar una solución. Empleamos el esquema de mutación normal descrito en la primera práctica, que consiste en sumarle a una componente del vector de pesos un valor extraído de una distribución normal de media $0$ y desviación típica $\sigma$ (varía según el algoritmo).\\
+
+\begin{algorithm}[ht]
+\begin{algorithmic}
+
+\Function{mutate}{w, comp, sigma}
+    \State w[comp] += normal$(0, \sigma)$
+    \If {w[comp] $< 0$}
+        \State w[comp] $= 0$
+    \EndIf
+    \If {w[comp] $> 1$}
+        \State w[comp] $= 1$
+    \EndIf
+\State \Return w
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+Notamos que al mutar los pesos pueden salirse del intervalo $[0,1]$, por lo que es necesario truncarlos para obtener soluciones que sigan siendo válidas.\\
 
 \subsection*{{\color{red}Función objetivo}}
 
@@ -307,42 +366,83 @@ Para calcular la tasa de clasificación y de reducción utilizamos otras funcion
 \section{Descripción de los algoritmos considerados}
 En esta sección se describen los algoritmos implementados en esta práctica para el problema del APC. En todos ellos lo que se pretende es rellenar un vector de pesos para maximizar la función objetivo.
 
-\subsection*{Consideraciones comunes}
-\label{comunes}
-\addcontentsline{toc}{subsection}{\nameref{comunes}}
-
-Todos los algoritmos desarrollados comparten una serie de comportamientos, que detallamos a continuación con el fin de evitar repeticiones.\\
-
-\subsection*{Enfriamiento simulado}
+\subsection*{Enfriamiento simulado (ES)}
 \label{es}
 \addcontentsline{toc}{subsection}{\nameref{es}}
 
-- Se aplica la filosofía habitual de búsqueda de
-diversificar al principio e intensificar al final.
+El algoritmo de enfriamiento simulado es un algoritmo de búsqueda por trayectorias que persigue paliar uno de los problemas más acusados de la búsqueda local: la caída en óptimos locales. Esto lo hace permitiendo aceptar soluciones peores que la mejor solución actual, aplicando la filosofía de diversificar al principio e intensificar al final.\\
 
-- Con el aumento de iteraciones
-disminuye la probabilidad de
-aceptar soluciones peores que
-la actual. A mayor temperatura, mayor probabilidad de aceptación de
-soluciones peores. Así, el algoritmo acepta soluciones mucho
-peores que la actual al principio de la ejecución (exploración) pero
-no al final (explotación)
+Para llevar a cabo este procedimiento nos basamos en un modelo termodinámico en el que hay una ``temperatura'' figurada que va disminuyendo (enfriando), de forma que a mayor temperatura, mayor probabilidad de aceptación de soluciones peores. Con el aumento de iteraciones disminuye la probabilidad de aceptar soluciones peores que la actual. Así, el algoritmo acepta soluciones mucho peores que la actual al principio de la ejecución (exploración) pero no al final (explotación).\\
 
-- Metrópolis con k=1. En el modelo de Metrópolis, se genera una perturbación aleatoria en el
-sistema y se calculan los cambios de energía resultantes: si hay una
-caída energética, el cambio se acepta automáticamente; por el contrario,
-si se produce un incremento energético, el cambio será aceptado con
-una probabilidad indicada por la anterior expresión.
+Para controlar la probabilidad de aceptación de soluciones utilizamos el modelo de Metrópolis. En este modelo se genera una perturbación (mutación) aleatoria en el sistema y se calculan los cambios de energía resultantes: si hay una caída energética (mejora la solución), el cambio se acepta automáticamente; por el contrario,
+si se produce un incremento energético (empeora la solución), el cambio será aceptado con una probabilidad $p = e^{- \Delta f / T}$, donde $\Delta f$ es la diferencia de la función a maximizar sobre las soluciones y $T$ es la temperatura actual del sistema.\\
 
-- Si la temperatura es muy baja respecto al tamaño del salto entonces
-hay riesgos de quedar atrapado en un óptimo local.
+A la hora de implementar el algoritmo, debemos tener en cuenta que estamos \textbf{maximizando} la función objetivo, por lo que a la hora de calcular la diferencia entre el \textit{fitness} de la solución actual y la mutada debemos ajustar el orden en consecuencia. También modificamos la generación de la temperatura inicial para tener en cuenta este hecho.\\
 
-\subsection*{Búsqueda local reiterada}
+La \textbf{mutación} de una solución se realiza siguiendo el esquema de mutación normal ya explicado en la sección de operadores comunes.\\
+
+Un último detalle a tener en cuenta es que es posible una solución y su mutación tengan el mismo valor de la función objetivo. En este caso, el modelo de Metrópolis aceptaría siempre la mutación, pero nosotros introducimos una pequeña perturbación en la diferencia para evitar que sea exactamente $0$, y exista la posibilidad de que la mutación sea rechazada.\\
+
+El valor de $M$ pretende representar el número de enfriamientos a realizar para alcanzar el número de iteraciones impuesto, aunque en ocasiones el algoritmo enfría más de la cuenta (debido a la condición extra sobre los éxitos).
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{simulated\_annealing}{training}
+
+\State sol = init\_solution(training, n)
+\State best\_sol = sol
+\State $T_0$ = ($0.3$ $\cdot$ ($1 - $ best\_sol.fitness $/$ $100$)) / $- \log(0.3)$
+\State $T$ = $T_0$
+\State iter = 1
+\State successful = 1
+\State M = $ 15000$ / $10 \cdot n$
+
+\While {$T_f$ $\geq$ $T$} \Comment{Debe ser $T_0 > T_f$}
+    \State $T_f$ = $T$ / 100
+\EndWhile
+
+\State $\beta = (T_0 - T_f$) / ($M \cdot T_0 \cdot T_f$)
+
+\While {iter $< 15000$ \textit{and} successful $\neq 0$ }
+    \State neighbour = 0
+    \State successful = 0
+
+    \While {iter $< 15000$ \textit{and} neighbour $< 10 \cdot n$ \textit{and} successful $< n$}
+    \State sol\_mut = mutate(sol, random\_int$(0,1)$, 0.3)
+    \State sol\_mut.fitness = evaluate(training, sol\_mut.w)
+    \State iter++
+    \State neighbour++
+    \State $\Delta f$ = sol.fitness - sol\_mut.fitness
+    \If {$\Delta f == 0$}
+        \State $\Delta f = 0.001$
+    \EndIf 
+    \If {diff $< 0$ \textit{or} random\_real$(0,1) \leq e^{- \Delta f / T}$}  \Comment{Criterio de Metrópolis}
+        \State successful++
+        \State sol = sol\_mut
+        \If {sol.fitness $>$ best\_sol.fitness}
+            \State best\_sol = sol
+        \EndIf
+    \EndIf
+    \EndWhile
+    
+    \State $T = T$ / $(1 + \beta \cdot T)$  \Comment{Esquema de enfriamiento Cauchy modificado}
+
+\EndWhile
+
+\Return best\_sol.w
+
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Búsqueda local reiterada (ILS)}
 \label{bl}
 \addcontentsline{toc}{subsection}{\nameref{bl}}
 
+Se utiliza la búsqueda local de la P1, con un máximo de $1000$ iteraciones. El pseudocódigo está en la sección de algoritmos de comparación.
 
-\subsection*{Evolución diferencial}
+\subsection*{Evolución diferencial (DE)}
 \label{ed}
 \addcontentsline{toc}{subsection}{\nameref{ed}}
 
@@ -446,39 +546,36 @@ El algoritmo RELIEF se detalla ya en la página siguiente.
 
 \subsection*{{\color{red} Búsqueda local}}
 
-Es un algoritmo prácticamente idéntico a la búsqueda local de baja intensidad que se ha explicado anteriormente. La diferencia es que inicializamos el vector inicial partiendo de una distribución uniforme $\mathcal U(0,1)$, y también que cuando generamos un vecino que mejora, reiniciamos el vector de índices. \\
+Empleamos la técnica de búsqueda local del \textbf{primer mejor} para rellenar el vector de pesos. La idea es mutar en cada iteración una componente aleatoria y \textbf{distinta} del vector de pesos, sumándole un valor extraído de una normal de media $0$ y desviación típica $\sigma = 0.3$. Si tras esta mutación se mejora la función objetivo, nos quedamos con este nuevo vector, y si no lo desechamos. Si algún peso se sale del intervalo $[0,1]$ tras la mutación, directamente lo truncamos a $0$ ó a $1$.\\
 
-Detenemos la búsqueda cuando llegamos al máximo de iteraciones, o cuando generamos un número de vecinos (dependiente del número de características) sin mejorar la función objetivo.\\
+A la hora de escoger qué componente vamos a mutar, tenemos un vector de índices del mismo tamaño que el vector de pesos, que barajamos de forma aleatoria y recorremos secuencialmente. Si llegamos al final, volvemos a barajarlo para seguir generando nuevas soluciones. \\
 
-Mostramos el pseudocódigo en la siguiente página.
+Para escoger el valor con el que se muta cada componente utilizamos esta vez el tipo predefinido \verb|normal_distribution<double>|. Para determinar si una mutación mejora, utilizamos como métrica el valor de la función objetivo, tomando la tasa de clasificación sobre el propio conjunto de entrenamiento (\textit{leave-one-out}). \\
 
-\newpage
+Hemos adaptado ligeramente este algoritmo con respecto al implementado en la práctica 1, para que acepte como parámetro un elemento de tipo \verb|Solution|, que hace las veces de solución inicial.\\
 
-\begin{algorithm}[h!]
+\vspace{20em}
+
+\begin{algorithm}[ht!]
 \begin{algorithmic}
 
-\Function{local\_search}{training}
+\Function{local\_search}{training, s}
 
-\State w, index = initialize()
+\State index = initialize() \Comment{vector de índices de 0 a $n$}
 
-\State best\_objective = evaluate(training, w)
+\State best\_fitness = evaluate(training, w)
 
   \While {iter $<$ MAX\_ITER \textit{and} neighbour $<$ n * MAX\_NEIGHBOUR\_PER\_TRAIT}
-    \State comp = index[iter $\%$ n]
-    \State w\_mut = w
-    \State w\_mut[comp] += normal(gen)
-
-    \If {w\_mut[comp] $>$ $1$} \State w\_mut[comp] = $1$
-    \ElsIf {w\_mut[comp] $<$ $0$} \State w\_mut[comp] = $0$
-    \EndIf
-    \State current\_objective = evaluate(training, w)
+    \State comp = index[iter $\%$ n] \Comment{n es el número de características}
+    \State s\_mut = s
+    \State mutate(s\_mut, comp, $0.3$)
+    \State s\_mut.fitness = evaluate(training, s\_mut.w)
     \State iter++
 
-    \If {current\_objective $>$ best\_objective}
-      \State mut++
+    \If {s\_mut.fitness $>$ best\_fitness}
       \State neighbour = $0$
-      \State w = w\_mut
-      \State best\_objective = current\_objective
+      \State s = s\_mut
+      \State best\_fitness = s\_mut.fitness
       \State improvement = true
 
     \Else
@@ -496,6 +593,8 @@ Mostramos el pseudocódigo en la siguiente página.
 
 \end{algorithmic}
 \end{algorithm}
+
+Notamos que detenemos la búsqueda cuando llegamos al máximo de iteraciones, o cuando generamos un número de vecinos (dependiente del número de características) sin mejorar la función objetivo.
 
 \newpage
 \section{Resultados}
