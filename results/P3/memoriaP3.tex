@@ -379,7 +379,7 @@ si se produce un incremento energético (empeora la solución), el cambio será 
 
 A la hora de implementar el algoritmo, debemos tener en cuenta que estamos \textbf{maximizando} la función objetivo, por lo que a la hora de calcular la diferencia entre el \textit{fitness} de la solución actual y la mutada debemos ajustar el orden en consecuencia. También modificamos la generación de la temperatura inicial para tener en cuenta este hecho.\\
 
-La \textbf{mutación} de una solución se realiza siguiendo el esquema de mutación normal ya explicado en la sección de operadores comunes.\\
+La \textbf{mutación} de una solución se realiza siguiendo el esquema de mutación normal ya explicado en la sección de operadores comunes. La solución inicial se construye de forma aleatoria.\\
 
 Un último detalle a tener en cuenta es que es posible una solución y su mutación tengan el mismo valor de la función objetivo. En este caso, el modelo de Metrópolis aceptaría siempre la mutación, pero nosotros introducimos una pequeña perturbación en la diferencia para evitar que sea exactamente $0$, y exista la posibilidad de que la mutación sea rechazada.\\
 
@@ -390,7 +390,7 @@ El valor de $M$ pretende representar el número de enfriamientos a realizar para
 
 \Function{simulated\_annealing}{training}
 
-\State sol = init\_solution(training, n)
+\State sol = init\_solution(training, n)  \Comment{n es el número de características}
 \State best\_sol = sol
 \State $T_0$ = ($0.3$ $\cdot$ ($1 - $ best\_sol.fitness $/$ $100$)) / $- \log(0.3)$
 \State $T$ = $T_0$
@@ -404,11 +404,11 @@ El valor de $M$ pretende representar el número de enfriamientos a realizar para
 
 \State $\beta = (T_0 - T_f$) / ($M \cdot T_0 \cdot T_f$)
 
-\While {iter $< 15000$ \textit{and} successful $\neq 0$ }
+\While {iter $<$ $15000$ \textit{and} successful $\neq 0$ }
     \State neighbour = 0
     \State successful = 0
 
-    \While {iter $< 15000$ \textit{and} neighbour $< 10 \cdot n$ \textit{and} successful $< n$}
+    \While {iter $<$ $15000$ \textit{and} neighbour $<$ $10 \cdot n$ \textit{and} successful $<$ $n$}
     \State sol\_mut = mutate(sol, random\_int$(0,1)$, 0.3)
     \State sol\_mut.fitness = evaluate(training, sol\_mut.w)
     \State iter++
@@ -440,18 +440,176 @@ El valor de $M$ pretende representar el número de enfriamientos a realizar para
 \label{bl}
 \addcontentsline{toc}{subsection}{\nameref{bl}}
 
-Se utiliza la búsqueda local de la P1, con un máximo de $1000$ iteraciones. El pseudocódigo está en la sección de algoritmos de comparación.
+La técnica de ILS está basada en la aplicación repetida de un algoritmo de búsqueda local a una solución inicial que se obtiene por mutación brusca de un óptimo local previamente encontrado. En nuestro caso, se utiliza la búsqueda local de la práctica 1, con un máximo de $1000$ iteraciones. El pseudocódigo está en la sección de algoritmos de comparación.\\
+
+Para la mutación de ILS empleamos la misma técnica que venimos usando hasta el momento, pero en vez de sobre una única componente lo hacemos sobre un porcentaje de estas, todas \textbf{distintas}. Además, incrementamos el valor de la desviación típica a $0.4$ para intentar obtener valores más alejados de los originales.\\
+
+Para evitar repetir componentes a mutar utilizamos un \verb|set| llamado \verb|mutated| (que no admite repetidos) en el que insertamos las componentes que ya se han mutado.\\
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{ils}{training}
+
+\State sol = init\_solution(training, n)  \Comment{n es el número de características}
+\State s = local\_search(training, s)
+\For {i $:=$ 1 to $N-1$}  \Comment {el número de iteraciones es $N=15$}
+    \State s\_mut = s
+    \State mutated = $\emptyset$
+    \For {$j := 0$ to $\lfloor 0.1 \cdot n \rfloor - 1$}  \Comment{Mutación ``brusca''}
+        \While {mutated.size() == j}
+            \State comp = random\_int$(0, n-1)$
+            \State mutated.insert(comp)
+        \EndWhile
+        
+        \State mutate(s\_mut.w, comp, $0.$)
+    \EndFor
+    
+    \State s\_mut.fitness = evaluate(training, s\_mut.w)
+    \State s\_mut = local\_search(training, s\_mut)  \Comment{Búsqueda local reiterada}
+    
+    \If {s\_mut.fitness $>$ s.fitness}  \Comment{Criterio de aceptación}
+        \State s = s\_mut
+    \EndIf
+\EndFor
+
+\State \Return s.w
+
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+El criterio de aceptación de soluciones es el de la \textbf{mejor solución}. Este criterio favorece la intensificación  o explotación del espacio de búsqueda.
 
 \subsection*{Evolución diferencial (DE)}
 \label{ed}
 \addcontentsline{toc}{subsection}{\nameref{ed}}
+
+En este caso estamos ante un algoritmo basado en poblaciones que implementa un operador de cruce consistente en generar un vector mutado (según una cierta probabilidad) añadiendo un vector diferencia, escalado y aleatoriamente muestreado, a un vector base aleatoriamente seleccionado de la población actual.\\
+
+Proporcionamos la implementación de dos variantes de este algoritmo, que difieren únicamente en la estrategia de recombinación de vectores. Para el algoritmo \textbf{DE/rand/1} la recombinación sigue la fórmula
+$$X^{t+1}_i= X^t_{r_1} + F (X^t_{r_2} - X^t_{r_3}),$$
+
+donde $X^t_i$ es el elemento $i-$ésimo de la población en la generación $t$, $r_1, r_2, r_3$ son índices aleatorios de la población y $F$ es el factor de escala, que en nuestro caso vale $0.5$. Para el algoritmo \textbf{DE/current-to-best/1} la recombinación se puede expresar como
+$$X^{t+1}_i= X^t_{i} + F (X^t_{\text{best}} - X^t_{i}) + F(X^t_{r_1} - X^t_{r_2}),$$
+
+donde se ha introducido el término $X^t_{\text{best}}$, que es el mejor elemento de la población actual.\\
+
+Necesitaremos además un operador de selección de padres, que escoja aleatoriamente de la población actual un número determinado de elementos para cruzar. Esta selección se hace sin reemplazamiento, y excluyendo de los candidatos el elemento de la población actual sobre el que se ejecuta el algoritmo general.
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{select\_parents}{pop, num, self}
+
+\State candidates = $\emptyset$  \Comment{es un set sin repetidos}
+\For {i $:=0$ to num$-1$}  \Comment {$num$ es el número de padres a seleccionar}
+    \While {candidates.size() == i}
+        \State index = random\_int$(0, num-1)$
+        \If {index $\neq$ self}
+            \State candidates.insert(index)
+        \EndIf
+    \EndWhile
+    \State selected.push\_back(pop[index])
+\EndFor
+\State \Return selected
+
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Pasamos ya a describir el algoritmo DE/rand/1. Como en los algoritmos anteriores, la población inicial de soluciones se genera de forma aleatoria. El reemplazamiento es \textit{one-to-one}, es decir, padre e hijo compiten por permanecer en la población.
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{de\_rand}{training}
+\State iter = 0
+\For {i $:=0$ to $N-1$} \Comment{El tamaño de la población es $N=50$}
+    \State pop.push\_back(init\_solution)
+    \State iter++
+\EndFor
+
+\While {iter $<$ $15000$}
+    \For {i $:= 0$ to $N-1$}
+        \State parents = select\_parents(pop, 3, i)
+        \State chosen = random\_int(0, n - 1) \Comment {n es el número de características}
+        \For{k $:= 0$ to $n-1$} 
+            \If {k $==$ chosen \textit{or} random\_real$(0,1) \leq CR$} \Comment {$CR = 0.5$}
+                \State offspring.w[k] = parents[0].w[k] + F $\cdot$ (parents[1].w[k] - parents[2].w[k])
+             \State truncate(offspring.w[k])  \Comment{Truncar a $[0,1]$}.
+            \Else
+                \State offspring.w[k] = pop[i].w[k]
+            \EndIf
+        \EndFor
+        \State offspring.fitness = evaluate(training, offspring.w)
+        \State iter++
+        
+        \If {offspring.fitness > pop[i].fitness} \Comment{reemplazo}
+            \State pop[i] = offspring
+        \EndIf
+    \EndFor
+\EndWhile
+
+\State sort(pop, solution\_comp) \Comment{ordenamos la población de menor a mayor por su \textit{fitness}}
+
+\State \Return pop[N-1].w
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Observamos que empleamos el esquema de recombinación binomial, mediante el cual primero generamos un índice aleatorio que siempre cambia, y para el resto consideramos una probabilidad de cruce de $0.5$. También debemos tener en cuenta que al aplicar la mutación queremos obtener soluciones válidas (en otro caso truncamos a $[0,1]$).\\
+
+El algoritmo DE/current-to-best/1 es muy similar al ya mostrado, cambiando el esquema de recombinación a la segunda alternativa mencionada anteriormente. En este caso hemos de seguirle la pista al mejor elemento de la población actual.
+
+\begin{algorithm}[h!]
+\begin{algorithmic}
+
+\Function{de\_current\_to\_best}{training}
+\State iter = 0
+\For {i $:=0$ to $N-1$} \Comment{El tamaño de la población es $N=50$}
+    \State pop.push\_back(init\_solution)
+    \State iter++
+\EndFor
+
+\State sort(pop, solution\_comp) \Comment{ordenamos la población de menor a mayor por su \textit{fitness}}
+\State current\_best = pop[N-1]
+
+\While {iter $<$ $15000$}
+    \For {i $:= 0$ to $N-1$}
+        \State parents = select\_parents(pop, 2, i)
+        \State chosen = random\_int(0, n - 1) \Comment {n es el número de características}
+        \For{k $:= 0$ to $n-1$} 
+            \If {k $==$ chosen \textit{or} random\_real$(0,1) \leq CR$} \Comment {$CR = 0.5$}
+                \State offspring.w[k] = pop[i].w[k] $+$ F $\cdot$ (current\_best.w[k] - pop[i].w[k]) 
+                 \State \hspace{7em} $ +$ F $\cdot$ (parents[0].w[k] - parents[0].w[k])
+             \State truncate(offspring.w[k])  \Comment{Truncar a $[0,1]$}.
+            \Else
+                \State offspring.w[k] = pop[i].w[k]
+            \EndIf
+        \EndFor
+        \State offspring.fitness = evaluate(training, offspring.w)
+        \State iter++
+        
+        \If {offspring.fitness > pop[i].fitness} \Comment{reemplazo}
+            \State pop[i] = offspring
+        \EndIf
+    \EndFor
+    \State sort(pop, solution\_comp)
+    \State current\_best = pop[N-1]
+\EndWhile
+
+\State \Return current\_best.w
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
 
 \newpage
 \section{Procedimiento considerado para desarrollar la práctica}
 
 Todo el código de la práctica se ha desarrollado en C++ siguiendo el estándar 2011. Se utiliza la biblioteca \verb|std| y otras bibliotecas auxiliares, pero no se ha hecho uso de ningún \textit{framework} de metaheurísticas.\\
 
-Para todos los procedimientos que implican aleatoreidad se utiliza un generador de números aleatorios común (llamado \verb|generator|), inicializado con una semilla concreta. La semilla por defecto es $2019$, aunque se puede especificar otra mediante línea de comandos. La evaluación de todos los algoritmos considerados se realiza mediante la función \verb|run_p2|, que también se encarga de recoger las estadísticas oportunas.\\
+Para todos los procedimientos que implican aleatoreidad se utiliza un generador de números aleatorios común (llamado \verb|generator|), inicializado con una semilla concreta. La semilla por defecto es $2019$, aunque se puede especificar otra mediante línea de comandos. La evaluación de todos los algoritmos considerados se realiza mediante la función \verb|run_p3|, que también se encarga de recoger las estadísticas oportunas.\\
 
 Se proporciona un makefile para compilar los archivos y generar un ejecutable (con optimización \verb|-O3|), mediante la orden \verb|make p3|. A la hora de ejecutarlo hay dos opciones:
 
@@ -475,7 +633,7 @@ Todas las ejecuciones se han realizado en un máquina con sistema operativo \ver
 \newpage
 \section{Algoritmos de comparación}
 
-Para comparar las metaheurísticas implementadas en esta práctica usaremos los algoritmos implementados en la práctica 1, a saber: el clasificador $1-$NN sin pesos, el algoritmo RELIEF y la búsqueda local.
+Para comparar las metaheurísticas implementadas en esta práctica usaremos los algoritmos implementados en la práctica 1, a saber: el clasificador $1-$NN sin pesos, el algoritmo RELIEF y la búsqueda local. También compararemos en ciertos casos con los algoritmos genéticos y meméticos de la práctica 2.
 
 \subsection*{{\color{red} Clasificador $\mathbf{1}$-NN sin pesos}}
 
@@ -596,6 +754,10 @@ Hemos adaptado ligeramente este algoritmo con respecto al implementado en la pr�
 
 Notamos que detenemos la búsqueda cuando llegamos al máximo de iteraciones, o cuando generamos un número de vecinos (dependiente del número de características) sin mejorar la función objetivo.
 
+\subsection*{{\color{red} Algoritmos genéticos y meméticos}}
+
+Aunque no se vuelven a describir en esta memoria los algoritmos genéticos y meméticos implementados en la práctica anterior, se mantienen en la tabla global de resultados para compararlos con los algoritmos de evolución diferencial, que también son algoritmos basados en poblaciones.
+
 \newpage
 \section{Resultados}
 
@@ -675,8 +837,6 @@ $\bar{x}$  & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89
 \end{tabular}
 \end{table}
 
-
-
 \textbf{Resumen global}\\
 
 Se recalca en \textbf{negrita} el mejor agregado para cada conjunto de datos, y en {\color{blue} azul} el segundo mejor.
@@ -689,6 +849,13 @@ Se recalca en \textbf{negrita} el mejor agregado para cada conjunto de datos, y 
 1-NN & 74.95 & 0.00 & 37.48 & 0.001 & 87.46 & 0.00 & 43.73 & 0.001 & 93.82 & 0.00 & 46.91 & 0.002\\
 RELIEF & 74.60 & 38.39 & 56.49 & 0.004 & 88.60 & 2.94 & 45.77 & 0.004 & 94.73 & 6.50 & 50.61 & 0.01\\
 BL & 74.19 & 80.65 & 77.42 & 15.685 & 84.62 & 86.47 & 85.54 & 6.521 & 89.45 & 82.50 & 85.98 & 20.017\\
+AGG-BLX & 75.30 & 78.71 & 77.01 & 41.61 & 90.02 & 84.71 & 87.37 & 32.32  & 87.27 & 84.00 & 85.64 & 96.06 \\
+AGG-CA & 72.87 & 60.00 & 66.43 & 42.77 & 87.74 & 71.76 & 79.75 & 35.18 & 92.55 & 67.50 & 80.02 & 104.69 \\
+AGE-BLX & 73.49 & 79.35 & 76.42 & 39.53 & 86.02 & 86.47 & 86.25 & 33.11 & 89.64 & 83.50 & 86.57 & 95.28 \\
+AGE-CA & 71.10 & 71.94 & 71.52 & 41.04 & 88.04 & 81.76 & 84.90 & 35.26 & 90.73 & 79.50 & 85.11 & 99.68 \\
+AM1 & 71.45 & 84.19 & {\color{blue}77.82} & 40.54 & 86.89 & 90.59 & {\color{blue}88.74} & 33.64 & 86.73 & 86.50 & 86.61 & 96.11 \\
+AM2 & 70.01 & 83.23 & 76.62 & 38.98 & 84.61 & 91.18 & 87.89 & 31.67 & 90.55 & 84.00 & \textbf{87.27} & 92.32 \\
+AM3 & 76.00 & 84.84 & \textbf{80.42} & 37.20 & 88.60 & 90.00 & \textbf{89.30} & 32.07 & 88.18 & 85.50 & {\color{blue}86.84} & 90.66 \\
 \end{tabular}
 \end{table}
 
